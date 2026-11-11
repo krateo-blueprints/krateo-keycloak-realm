@@ -245,6 +245,55 @@
         "orphan",
         "delete"
       ]
+    },
+    "oidcConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+        },
+        "keycloakUrl": {
+          "type": "string",
+          "pattern": "^(https://.+)?$"
+        },
+        "discoveryUrl": {
+          "type": "string",
+          "pattern": "^(https?://.+)?$"
+        },
+        "allowedGroups": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalScopes": {
+          "type": "string"
+        },
+        "graphics": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "displayName": {
+              "type": "string"
+            },
+            "icon": {
+              "type": "string"
+            },
+            "backgroundColor": {
+              "type": "string"
+            },
+            "textColor": {
+              "type": "string"
+            }
+          }
+        }
+      }
     }
   }
 }

@@ -1,0 +1,157 @@
+{
+  "description": "OIDCConfig is a AuthN Service OIDC configuration.",
+  "properties": {
+    "apiVersion": {
+      "description": "APIVersion defines the versioned schema of this representation of an object.\nServers should convert recognized schemas to the latest internal value, and\nmay reject unrecognized values.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+      "type": "string"
+    },
+    "kind": {
+      "description": "Kind is a string value representing the REST resource this object represents.\nServers may infer this from the endpoint the client submits requests to.\nCannot be updated.\nIn CamelCase.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+      "type": "string"
+    },
+    "metadata": {
+      "type": "object"
+    },
+    "spec": {
+      "properties": {
+        "additionalScopes": {
+          "type": "string"
+        },
+        "allowedGroups": {
+          "description": "AllowedGroups restricts who may log in with this provider: a user is\nadmitted only if their groups (from the ID token, or the RESTAction)\ninclude at least one of these. Anyone else is refused with 403\nGroupNotAllowed, and no credential is issued. Empty or omitted: every\nuser the provider authenticates is admitted, and RBAC alone decides\nwhat they may do.",
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "authorizationURL": {
+          "type": "string"
+        },
+        "clientID": {
+          "type": "string"
+        },
+        "clientSecret": {
+          "description": "ClientSecret is the client's secret at the provider. Omit it for a\npublic client: authn then sends no client_secret, and refuses a login\nthat carries no PKCE verifier (400 MissingCodeVerifier). When set, the\nSecret and its key must exist.",
+          "properties": {
+            "key": {
+              "description": "The key to select.",
+              "type": "string"
+            },
+            "name": {
+              "description": "Name of the referenced object.",
+              "type": "string"
+            },
+            "namespace": {
+              "description": "Namespace of the referenced object.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "key",
+            "name",
+            "namespace"
+          ],
+          "type": "object"
+        },
+        "discoveryURL": {
+          "type": "string"
+        },
+        "graphics": {
+          "description": "An object that contains the description of the frontend elements of this login method",
+          "properties": {
+            "backgroundColor": {
+              "description": "Background color of the login button",
+              "type": "string"
+            },
+            "displayName": {
+              "description": "Text on the login button",
+              "type": "string"
+            },
+            "icon": {
+              "description": "Icon of the login button",
+              "type": "string"
+            },
+            "textColor": {
+              "description": "Text color of the login button",
+              "type": "string"
+            }
+          },
+          "required": [
+            "backgroundColor",
+            "displayName",
+            "icon",
+            "textColor"
+          ],
+          "type": "object"
+        },
+        "issuer": {
+          "description": "Issuer is the expected `iss` of the ID token. Required when\ndiscoveryURL is not set; otherwise it is read from the discovery\ndocument, and if set here it must equal the discovered one.\nAn OIDCConfig with neither refuses logins.",
+          "type": "string"
+        },
+        "redirectURI": {
+          "type": "string"
+        },
+        "restActionRef": {
+          "description": "An ObjectRef is a reference to an object with a known type in an arbitrary namespace.",
+          "properties": {
+            "name": {
+              "description": "Name of the referenced object.",
+              "type": "string"
+            },
+            "namespace": {
+              "description": "Namespace of the referenced object.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "namespace"
+          ],
+          "type": "object"
+        },
+        "stepUp": {
+          "description": "StepUp enables POST /oidc/stepup for this provider: a login that proves\na higher assurance level (acr) gets a short-lived credential carrying\nthe group krateo:loa:2. Without it, step-up is refused.",
+          "properties": {
+            "acrValues": {
+              "description": "AcrValues are the ID token `acr` values that prove level of assurance\n2. A step-up whose acr is not listed is refused. Each value is\nnon-empty and has no whitespace: acr_values is space-separated.",
+              "items": {
+                "pattern": "^\\S+$",
+                "type": "string"
+              },
+              "minItems": 1,
+              "type": "array"
+            },
+            "maxAge": {
+              "description": "MaxAge is how long ago the user may have authenticated (`auth_time`)\nfor a step-up to be granted. A long-lived SSO session at that level\nis not enough on its own. Default 5m.",
+              "type": "string"
+            },
+            "ttl": {
+              "description": "TTL is the requested lifetime of the step-up credential. It is never\nrenewed. Default 15m. The Kubernetes CSR API's minimum is 10m, and a\nshorter TTL is refused.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "acrValues"
+          ],
+          "type": "object"
+        },
+        "tokenURL": {
+          "type": "string"
+        },
+        "userInfoURL": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "clientID",
+        "redirectURI"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "spec"
+  ],
+  "type": "object"
+}
