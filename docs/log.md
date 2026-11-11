@@ -9,6 +9,14 @@ timestamp: 2026-11-11T00:00:00Z
 
 # Log
 
+## 2026-11-11 — 0.2.0
+
+Renders authn's `OIDCConfig` from the realm's own client and groups (one source for issuer, client id,
+redirect URI and allowed groups), only where authn's API exists, so the portal gets its Keycloak
+sign-in. `krateo:` group names are refused (reserved by authn). Validated on GKE end to end through a
+CompositionDefinition: a PKCE sign-in admitted a `tenants` member (200) and refused a user in no
+allowed group (403). Also in 0.1.x: deletion protection (`orphan`) on every Keycloak resource.
+
 ## 2026-11-11 — 0.1.0
 
 First release. Validated live on disposable GKE clusters against keycloak-operator 0.2.4, keycloak

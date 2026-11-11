@@ -94,3 +94,28 @@ parentClient:
   webOrigins: []
   postLogoutRedirectUris: "+"
   groupsClaim: groups
+
+# The authn OIDCConfig that puts "sign in with Keycloak" on the portal, derived from the same values
+# as the client above so the two cannot drift: clientID = parentClient.clientId, redirectURI =
+# parentClient.redirectUris[0], allowedGroups = the realm groups. Public client: no secret, so authn
+# requires the portal's PKCE verifier. Rendered only where authn's OIDCConfig API exists.
+oidcConfig:
+  enabled: true
+  name: keycloak
+  # REQUIRED when enabled: Keycloak's public base URL (the keycloak chart's keycloak.hostname), e.g.
+  # https://keycloak.example.com. The issuer is <keycloakUrl>/realms/<realm.name>.
+  keycloakUrl: ""
+  # Where authn reads the discovery document. Empty = <issuer>/.well-known/openid-configuration.
+  # Point it at Keycloak's in-cluster https Service when authn cannot reach the public URL; with
+  # Keycloak's hostname-backchannel-dynamic option the document then names in-cluster token and
+  # userinfo endpoints while the issuer and the browser's authorization endpoint stay public.
+  discoveryUrl: ""
+  # Empty = every name in `groups`.
+  allowedGroups: []
+  additionalScopes: ""
+  graphics:
+    displayName: Sign in with Keycloak
+    icon: key
+    backgroundColor: ""
+    textColor: ""
+

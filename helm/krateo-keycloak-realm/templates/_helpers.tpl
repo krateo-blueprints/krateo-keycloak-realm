@@ -22,8 +22,8 @@ configurationRef:
 
 {{- define "kr.check" -}}
 {{- range .Values.groups -}}
-{{- if or (hasPrefix "/" .name) (hasPrefix "system:" .name) -}}
-{{- fail (printf "group %q: a group name must not start with \"/\" (a group path) or \"system:\" (reserved for Kubernetes)" .name) -}}
+{{- if or (hasPrefix "/" .name) (hasPrefix "system:" .name) (hasPrefix "krateo:" .name) -}}
+{{- fail (printf "group %q: a group name must not start with \"/\" (a group path), \"system:\" (reserved for Kubernetes) or \"krateo:\" (reserved for authn, e.g. krateo:loa:2)" .name) -}}
 {{- end -}}
 {{- end -}}
 {{- if and .Values.parentClient.enabled (not .Values.parentClient.redirectUris) -}}

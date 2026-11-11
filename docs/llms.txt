@@ -1,4 +1,4 @@
-# krateo-keycloak-realm — LLM doc index (pinned: 0.1.0)
+# krateo-keycloak-realm — LLM doc index (pinned: 0.2.0)
 docs/index.md: the map of the bundle
 docs/overview.md: what is declared, and the deletion-protection, keep and no-credential properties
 docs/usage.md: install, password vs token mail, placing and rotating the Secret, verifying mail

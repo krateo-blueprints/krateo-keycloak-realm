@@ -1,0 +1,33 @@
+{{- include "kr.check" . }}
+{{- $o := .Values.oidcConfig }}
+{{- if and $o.enabled .Values.parentClient.enabled (.Capabilities.APIVersions.Has "oidc.authn.krateo.io/v1alpha1/OIDCConfig") }}
+{{- $base := required "oidcConfig.keycloakUrl is required when oidcConfig.enabled (Keycloak's public base URL, e.g. https://keycloak.example.com)" $o.keycloakUrl | trimSuffix "/" }}
+{{- $issuer := printf "%s/realms/%s" $base .Values.realm.name }}
+{{- $groups := $o.allowedGroups }}
+{{- if not $groups }}{{- range .Values.groups }}{{- $groups = append $groups .name }}{{- end }}{{- end }}
+# authn's sign-in strategy for this realm. Every value comes from this chart's own client and groups.
+apiVersion: oidc.authn.krateo.io/v1alpha1
+kind: OIDCConfig
+metadata:
+  name: {{ $o.name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kr.labels" . | nindent 4 }}
+spec:
+  issuer: {{ $issuer | quote }}
+  discoveryURL: {{ $o.discoveryUrl | default (printf "%s/.well-known/openid-configuration" $issuer) | quote }}
+  clientID: {{ .Values.parentClient.clientId | quote }}
+  redirectURI: {{ first .Values.parentClient.redirectUris | quote }}
+  {{- with $o.additionalScopes }}
+  additionalScopes: {{ . | quote }}
+  {{- end }}
+  {{- with $groups }}
+  allowedGroups:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  graphics:
+    displayName: {{ $o.graphics.displayName | quote }}
+    icon: {{ $o.graphics.icon | quote }}
+    backgroundColor: {{ $o.graphics.backgroundColor | quote }}
+    textColor: {{ $o.graphics.textColor | quote }}
+{{- end }}
