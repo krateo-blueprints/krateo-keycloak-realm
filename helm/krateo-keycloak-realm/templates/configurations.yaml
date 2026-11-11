@@ -14,6 +14,12 @@ metadata:
   namespace: {{ $.Release.Namespace }}
   labels:
     {{- include "kr.labels" $ | nindent 4 }}
+  annotations:
+    # Kept on uninstall: the realm/group/client CRs' finalizers DELETE their Keycloak objects through
+    # this Configuration. If uninstall removed it in the same pass (helm deletes everything at once),
+    # every CR would fail its delete forever ("... keycloak-admin not found"). It holds no secret, only
+    # a pointer to the token Secret, and a reinstall under the same release name adopts it.
+    helm.sh/resource-policy: keep
 spec:
   authentication:
     bearer:
