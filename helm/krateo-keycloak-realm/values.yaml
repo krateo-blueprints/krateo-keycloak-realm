@@ -7,6 +7,13 @@
 # API group the KOG generates its kinds in (keycloak-config-kog's `resourceGroup`).
 resourceGroup: keycloak.ogen.krateo.io
 
+# What happens IN KEYCLOAK when one of this chart's resources is deleted (helm uninstall, a prune, a
+# kubectl delete). `orphan` (default): the Kubernetes object goes, the realm, its groups and the client
+# stay in Keycloak untouched, so a mistaken uninstall or prune can never wipe the realm and every user
+# in it. A reinstall adopts them again. `delete`: Keycloak objects are deleted with their resources;
+# set it explicitly only to really decommission the realm. Applied as krateo.io/deletion-policy.
+deletionPolicy: orphan
+
 # How the KOG controllers authenticate: one <Kind>Configuration per kind, all pointing at the
 # bearer-token Secret keycloak-config-kog rotates.
 configuration:
@@ -47,12 +54,26 @@ realm:
     auth: "true"
     starttls: "true"
     ssl: "false"
-    # The SMTP user and password, as two keys of one Secret in the release namespace. Placed by the
-    # operator of the cluster; never a chart value.
+    # basic: SMTP AUTH with a password. token: XOAUTH2 with an OAuth2 client-credentials token
+    # (Keycloak >= 26.2), required by providers that disable password SMTP AUTH, e.g. Microsoft 365
+    # (host smtp.office365.com, port "587", starttls "true").
+    authType: basic
+    token:
+      # e.g. https://login.microsoftonline.com/<tenant-id>/oauth2/v2.0/token
+      url: ""
+      clientId: ""
+      # Microsoft documents https://outlook.office365.com/.default for SMTP client credentials; the
+      # Keycloak server admin guide's example shows https://outlook.office.com/.default. The default
+      # follows Microsoft.
+      scope: https://outlook.office365.com/.default
+    # The SMTP credentials, as keys of one Secret in the release namespace. Placed by the operator of
+    # the cluster; never chart values. userKey is the SMTP (SASL) user in both modes, e.g. the sending
+    # mailbox for Microsoft 365; passwordKey is used by authType basic, clientSecretKey by token.
     credentialsSecret:
       name: keycloak-smtp
       userKey: username
       passwordKey: password
+      clientSecretKey: clientSecret
 
 # Realm groups (top level). Membership is managed elsewhere (identity-lifecycle), never here.
 # Names are emitted verbatim in the `groups` claim, so they must not start with "/" (that is a group

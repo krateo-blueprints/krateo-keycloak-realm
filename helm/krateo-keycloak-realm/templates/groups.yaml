@@ -8,6 +8,8 @@ metadata:
   namespace: {{ $.Release.Namespace }}
   labels:
     {{- include "kr.labels" $ | nindent 4 }}
+  annotations:
+    {{- include "kr.deletionPolicy" $ | nindent 4 }}
 spec:
   {{- include "kr.configurationRef" $ | nindent 2 }}
   realm: {{ $.Values.realm.name | quote }}

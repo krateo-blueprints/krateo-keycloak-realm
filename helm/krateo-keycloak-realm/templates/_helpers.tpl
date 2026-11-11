@@ -5,6 +5,10 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 {{- end -}}
 
+{{- define "kr.deletionPolicy" -}}
+krateo.io/deletion-policy: {{ .Values.deletionPolicy }}
+{{- end -}}
+
 {{- define "kr.configurationRef" -}}
 configurationRef:
   name: {{ .Values.configuration.name }}
@@ -28,6 +32,12 @@ configurationRef:
 {{- if .Values.realm.smtp.enabled -}}
 {{- if or (not .Values.realm.smtp.host) (not .Values.realm.smtp.from) -}}
 {{- fail "realm.smtp.host and realm.smtp.from are required when realm.smtp.enabled" -}}
+{{- end -}}
+{{- if and (eq .Values.realm.smtp.authType "token") (or (not .Values.realm.smtp.token.url) (not .Values.realm.smtp.token.clientId) (not .Values.realm.smtp.token.scope)) -}}
+{{- fail "realm.smtp.token.url, .clientId and .scope are required when realm.smtp.authType is token" -}}
+{{- end -}}
+{{- if and (eq .Values.realm.smtp.authType "token") (ne (.Values.realm.smtp.auth | toString) "true") -}}
+{{- fail "realm.smtp.authType token needs realm.smtp.auth \"true\"" -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}

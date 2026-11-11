@@ -7,6 +7,8 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "kr.labels" . | nindent 4 }}
+  annotations:
+    {{- include "kr.deletionPolicy" . | nindent 4 }}
 spec:
   {{- include "kr.configurationRef" . | nindent 2 }}
   realm: {{ $r.name | quote }}
@@ -42,11 +44,22 @@ spec:
     auth: {{ $r.smtp.auth | toString | quote }}
     starttls: {{ $r.smtp.starttls | toString | quote }}
     ssl: {{ $r.smtp.ssl | toString | quote }}
+    authType: {{ $r.smtp.authType | quote }}
+    {{- if eq $r.smtp.authType "token" }}
+    authTokenUrl: {{ $r.smtp.token.url | quote }}
+    authTokenClientId: {{ $r.smtp.token.clientId | quote }}
+    authTokenScope: {{ $r.smtp.token.scope | quote }}
+    {{- end }}
   {{- if eq ($r.smtp.auth | toString) "true" }}
-  # The SMTP user and password: read by the controller from this Secret, never stored in the CR.
+  # The SMTP credentials: read by the controller from this Secret, never stored in the CR. Only the
+  # key the chosen authType needs is declared.
   smtpCredentialsRef:
     name: {{ $r.smtp.credentialsSecret.name }}
     userKey: {{ $r.smtp.credentialsSecret.userKey }}
+    {{- if eq $r.smtp.authType "token" }}
+    clientSecretKey: {{ $r.smtp.credentialsSecret.clientSecretKey }}
+    {{- else }}
     passwordKey: {{ $r.smtp.credentialsSecret.passwordKey }}
+    {{- end }}
   {{- end }}
   {{- end }}

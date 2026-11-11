@@ -108,15 +108,24 @@
             },
             "auth": {
               "type": "string",
-              "enum": ["true", "false"]
+              "enum": [
+                "true",
+                "false"
+              ]
             },
             "starttls": {
               "type": "string",
-              "enum": ["true", "false"]
+              "enum": [
+                "true",
+                "false"
+              ]
             },
             "ssl": {
               "type": "string",
-              "enum": ["true", "false"]
+              "enum": [
+                "true",
+                "false"
+              ]
             },
             "credentialsSecret": {
               "type": "object",
@@ -132,6 +141,32 @@
                 "passwordKey": {
                   "type": "string",
                   "minLength": 1
+                },
+                "clientSecretKey": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "authType": {
+              "type": "string",
+              "enum": [
+                "basic",
+                "token"
+              ]
+            },
+            "token": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "url": {
+                  "type": "string"
+                },
+                "clientId": {
+                  "type": "string"
+                },
+                "scope": {
+                  "type": "string"
                 }
               }
             }
@@ -143,7 +178,9 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["name"],
+        "required": [
+          "name"
+        ],
         "additionalProperties": false,
         "properties": {
           "name": {
@@ -200,6 +237,14 @@
           "minLength": 1
         }
       }
+    },
+    "deletionPolicy": {
+      "description": "orphan (default): deleting this chart's resources leaves the Keycloak objects in place. delete: deletes them.",
+      "type": "string",
+      "enum": [
+        "orphan",
+        "delete"
+      ]
     }
   }
 }
