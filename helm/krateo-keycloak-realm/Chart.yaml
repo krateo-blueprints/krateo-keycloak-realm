@@ -8,6 +8,7 @@ description: >-
 type: application
 version: CHART_VERSION
 appVersion: "1.0.0"
+icon: https://raw.githubusercontent.com/krateo-platformops/.github/main/brand/logo.svg
 home: https://github.com/krateo-blueprints/krateo-keycloak-realm
 # Helm's `sources` is the source code of THIS chart; release tooling resolves the chart version as a
 # tag in each listed repository, so only this repository belongs here.

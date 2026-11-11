@@ -1,0 +1,18 @@
+realm:
+  smtp:
+    enabled: true
+    host: smtp.office365.com
+    port: "587"
+    from: noreply@example.com
+    auth: "true"
+    starttls: "true"
+    ssl: "false"
+    authType: token
+    token:
+      url: https://login.microsoftonline.com/<tenant-id>/oauth2/v2.0/token
+      clientId: <application-client-id>
+parentClient:
+  redirectUris:
+    - https://cmp.example.com/auth?kind=oidc
+  webOrigins:
+    - https://cmp.example.com

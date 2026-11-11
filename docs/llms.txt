@@ -1,0 +1,10 @@
+# krateo-keycloak-realm — LLM doc index (pinned: 0.1.0)
+docs/index.md: the map of the bundle
+docs/overview.md: what is declared, and the deletion-protection, keep and no-credential properties
+docs/usage.md: install, password vs token mail, placing and rotating the Secret, verifying mail
+docs/configuration.md: the values surface
+docs/api.md: the resources rendered and their annotations
+docs/examples.md: index of examples
+docs/release.md: how a release ships
+docs/log.md: history
+examples/microsoft-365/README.md: realm with Microsoft 365 token mail

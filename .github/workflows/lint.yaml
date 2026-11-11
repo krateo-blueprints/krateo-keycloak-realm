@@ -1,0 +1,62 @@
+name: lint
+
+# Lints and renders the chart on pull requests and on every commit that reaches main, so release-tag
+# can refuse a tag on a commit that never passed lint (krateo-blueprints/charts PUBLISHING.md rule 10).
+on:
+  pull_request:
+    paths:
+      - "**"
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  lint-docs:
+    uses: krateo-platformops/.github/.github/workflows/lint-docs.yaml@main
+
+  # Gating, and the check-run release consumers (installer's pin-ci) look for. Each gate self-tests
+  # its detector before judging the chart.
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install Helm
+        uses: azure/setup-helm@v5
+
+      - name: Chart gates
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet pyyaml
+          # core-provider makes every `required` key mandatory on the Composition CR, while values.yaml
+          # defaults apply only at render: requiring a defaulted key makes CRs uncreatable.
+          python3 hack/check-schema-required.py
+          # helm uninstall deletes everything at once; the Configurations must outlive the resources
+          # whose finalizers authenticate through them.
+          python3 hack/check-configurations-keep.py
+          # Deleting the realm resource must never delete the realm (and every user) by default.
+          python3 hack/check-deletion-policy.py
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install Helm
+        uses: azure/setup-helm@v5
+
+      - name: Stamp the CHART_VERSION placeholder for CI
+        run: |
+          find . -type f -name Chart.yaml -not -path '*/charts/*' -not -path './.git/*' \
+            -exec sed -i "s/CHART_VERSION/0.0.0-ci/g" {} +
+
+      - name: helm lint + template (gating)
+        run: |
+          set -euo pipefail
+          helm lint helm/krateo-keycloak-realm --set 'parentClient.redirectUris[0]=https://cmp.example.com/auth?kind=oidc'
+          helm template release helm/krateo-keycloak-realm -f examples/microsoft-365/values.yaml > /dev/null
+          helm template release helm/krateo-keycloak-realm --set 'parentClient.redirectUris[0]=https://x/auth' --set global.injected=true > /dev/null
+          echo "renders with the example values and with an injected global"
