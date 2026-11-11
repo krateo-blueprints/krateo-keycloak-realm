@@ -1,0 +1,21 @@
+apiVersion: v2
+name: krateo-keycloak-realm
+description: >-
+  A Keycloak parent realm for a Krateo platform, declared as keycloak-config-kog custom resources:
+  realm settings (registration off, set-password and verify-email links by email, events), its
+  groups, and the portal's public PKCE OIDC client with a groups claim. Requires keycloak-config-kog
+  >= 0.6.0 installed and authenticated against the target Keycloak.
+type: application
+version: CHART_VERSION
+appVersion: "1.0.0"
+home: https://github.com/krateo-blueprints/krateo-keycloak-realm
+# Helm's `sources` is the source code of THIS chart; release tooling resolves the chart version as a
+# tag in each listed repository, so only this repository belongs here.
+sources:
+  - https://github.com/krateo-blueprints/krateo-keycloak-realm
+keywords:
+  - keycloak
+  - realm
+  - oidc
+maintainers:
+  - name: krateo

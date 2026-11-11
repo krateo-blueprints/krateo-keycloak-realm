@@ -1,0 +1,24 @@
+{{- include "kr.check" . }}
+{{- $kinds := list "KeycloakRealmConfiguration" "KeycloakGroupConfiguration" }}
+{{- if .Values.parentClient.enabled }}
+{{- $kinds = append $kinds "KeycloakClientConfiguration" }}
+{{- end }}
+{{- range $kinds }}
+---
+# How the KOG's {{ trimSuffix "Configuration" . }} controller authenticates: the bearer token that
+# keycloak-config-kog keeps fresh in a Secret.
+apiVersion: {{ $.Values.resourceGroup }}/v1alpha1
+kind: {{ . }}
+metadata:
+  name: {{ $.Values.configuration.name }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "kr.labels" $ | nindent 4 }}
+spec:
+  authentication:
+    bearer:
+      tokenRef:
+        name: {{ $.Values.configuration.tokenSecret.name }}
+        namespace: {{ $.Values.configuration.tokenSecret.namespace | default $.Release.Namespace }}
+        key: {{ $.Values.configuration.tokenSecret.key }}
+{{- end }}

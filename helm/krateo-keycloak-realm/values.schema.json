@@ -1,0 +1,190 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "krateo-keycloak-realm values",
+  "type": "object",
+  "properties": {
+    "global": {
+      "description": "Injected by Krateo's chart-inspector at install time.",
+      "type": "object"
+    },
+    "resourceGroup": {
+      "type": "string",
+      "minLength": 1
+    },
+    "configuration": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tokenSecret": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "namespace": {
+              "type": "string"
+            },
+            "key": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "realm": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][-A-Za-z0-9_.]*$"
+        },
+        "displayName": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "registrationAllowed": {
+          "type": "boolean"
+        },
+        "resetPasswordAllowed": {
+          "type": "boolean"
+        },
+        "verifyEmail": {
+          "type": "boolean"
+        },
+        "loginWithEmailAllowed": {
+          "type": "boolean"
+        },
+        "actionTokenGeneratedByAdminLifespan": {
+          "description": "Seconds an administrator-sent action link (the set-password email) stays valid.",
+          "type": "integer",
+          "minimum": 60
+        },
+        "events": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "types": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "listeners": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "smtp": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "host": {
+              "type": "string"
+            },
+            "port": {
+              "type": "string",
+              "pattern": "^[0-9]{1,5}$"
+            },
+            "from": {
+              "type": "string"
+            },
+            "fromDisplayName": {
+              "type": "string"
+            },
+            "replyTo": {
+              "type": "string"
+            },
+            "auth": {
+              "type": "string",
+              "enum": ["true", "false"]
+            },
+            "starttls": {
+              "type": "string",
+              "enum": ["true", "false"]
+            },
+            "ssl": {
+              "type": "string",
+              "enum": ["true", "false"]
+            },
+            "credentialsSecret": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "userKey": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "passwordKey": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "groups": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "parentClient": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "clientId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "rootUrl": {
+          "type": "string"
+        },
+        "redirectUris": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "webOrigins": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "postLogoutRedirectUris": {
+          "type": "string"
+        },
+        "groupsClaim": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

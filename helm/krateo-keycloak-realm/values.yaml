@@ -1,0 +1,73 @@
+# krateo-keycloak-realm
+#
+# Every object here is a keycloak-config-kog custom resource, reconciled against Keycloak by the
+# KOG's controllers (which also heal changes made in the Keycloak console). Install it AFTER
+# keycloak-config-kog >= 0.6.0, in the namespace whose token Secret the KOG keeps fresh.
+
+# API group the KOG generates its kinds in (keycloak-config-kog's `resourceGroup`).
+resourceGroup: keycloak.ogen.krateo.io
+
+# How the KOG controllers authenticate: one <Kind>Configuration per kind, all pointing at the
+# bearer-token Secret keycloak-config-kog rotates.
+configuration:
+  name: keycloak-admin
+  tokenSecret:
+    name: keycloak-admin-token
+    # Empty = the release namespace.
+    namespace: ""
+    key: token
+
+realm:
+  name: krateo
+  displayName: Krateo
+  enabled: true
+  # Accounts are created only through the access-request flow, never by self-registration.
+  registrationAllowed: false
+  # "Forgot password" stays available, e.g. for a user whose set-password link expired.
+  resetPasswordAllowed: true
+  verifyEmail: true
+  loginWithEmailAllowed: true
+  # Lifetime of administrator-sent action links (the set-password email), in seconds: 72 hours.
+  actionTokenGeneratedByAdminLifespan: 259200
+  events:
+    enabled: true
+    types:
+      - SEND_EXECUTE_ACTIONS
+      - SEND_ERROR
+    listeners:
+      - jboss-logging
+  # Outgoing mail. Off by default: an install without SMTP gets a realm that sends nothing.
+  smtp:
+    enabled: false
+    host: ""
+    port: "587"
+    from: ""
+    fromDisplayName: ""
+    replyTo: ""
+    auth: "true"
+    starttls: "true"
+    ssl: "false"
+    # The SMTP user and password, as two keys of one Secret in the release namespace. Placed by the
+    # operator of the cluster; never a chart value.
+    credentialsSecret:
+      name: keycloak-smtp
+      userKey: username
+      passwordKey: password
+
+# Realm groups (top level). Membership is managed elsewhere (identity-lifecycle), never here.
+groups:
+  - tenants
+  - platform-admins
+
+# The portal's OIDC client: public (no secret), authorization code + PKCE S256, with a `groups`
+# claim carrying bare group names (`tenants`, not `/tenants`).
+parentClient:
+  enabled: true
+  clientId: krateo-portal
+  name: Krateo portal
+  rootUrl: ""
+  # REQUIRED when enabled, e.g. https://cmp.example.com/auth?kind=oidc
+  redirectUris: []
+  webOrigins: []
+  postLogoutRedirectUris: "+"
+  groupsClaim: groups

@@ -1,0 +1,15 @@
+{{- include "kr.check" . }}
+{{- range .Values.groups }}
+---
+apiVersion: {{ $.Values.resourceGroup }}/v1
+kind: KeycloakGroup
+metadata:
+  name: {{ printf "%s-%s" (include "kr.objName" $.Values.realm.name) (include "kr.objName" .) | trunc 63 | trimSuffix "-" }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "kr.labels" $ | nindent 4 }}
+spec:
+  {{- include "kr.configurationRef" $ | nindent 2 }}
+  realm: {{ $.Values.realm.name | quote }}
+  name: {{ . | quote }}
+{{- end }}

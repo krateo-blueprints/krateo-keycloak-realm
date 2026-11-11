@@ -1,0 +1,52 @@
+{{- include "kr.check" . }}
+{{- $r := .Values.realm }}
+apiVersion: {{ .Values.resourceGroup }}/v1
+kind: KeycloakRealm
+metadata:
+  name: {{ include "kr.objName" $r.name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kr.labels" . | nindent 4 }}
+spec:
+  {{- include "kr.configurationRef" . | nindent 2 }}
+  realm: {{ $r.name | quote }}
+  enabled: {{ $r.enabled }}
+  {{- with $r.displayName }}
+  displayName: {{ . | quote }}
+  {{- end }}
+  registrationAllowed: {{ $r.registrationAllowed }}
+  resetPasswordAllowed: {{ $r.resetPasswordAllowed }}
+  verifyEmail: {{ $r.verifyEmail }}
+  loginWithEmailAllowed: {{ $r.loginWithEmailAllowed }}
+  actionTokenGeneratedByAdminLifespan: {{ int $r.actionTokenGeneratedByAdminLifespan }}
+  eventsEnabled: {{ $r.events.enabled }}
+  {{- with $r.events.types }}
+  enabledEventTypes:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with $r.events.listeners }}
+  eventsListeners:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if $r.smtp.enabled }}
+  smtpServer:
+    host: {{ $r.smtp.host | quote }}
+    port: {{ $r.smtp.port | toString | quote }}
+    from: {{ $r.smtp.from | quote }}
+    {{- with $r.smtp.fromDisplayName }}
+    fromDisplayName: {{ . | quote }}
+    {{- end }}
+    {{- with $r.smtp.replyTo }}
+    replyTo: {{ . | quote }}
+    {{- end }}
+    auth: {{ $r.smtp.auth | toString | quote }}
+    starttls: {{ $r.smtp.starttls | toString | quote }}
+    ssl: {{ $r.smtp.ssl | toString | quote }}
+  {{- if eq ($r.smtp.auth | toString) "true" }}
+  # The SMTP user and password: read by the controller from this Secret, never stored in the CR.
+  smtpCredentialsRef:
+    name: {{ $r.smtp.credentialsSecret.name }}
+    userKey: {{ $r.smtp.credentialsSecret.userKey }}
+    passwordKey: {{ $r.smtp.credentialsSecret.passwordKey }}
+  {{- end }}
+  {{- end }}
