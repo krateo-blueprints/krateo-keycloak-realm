@@ -28,7 +28,7 @@ realm:
   name: krateo
   displayName: Krateo
   enabled: true
-  # Accounts are created only through the access-request flow, never by self-registration.
+  # Accounts are created only through an administrator-approved joiner flow, never by self-registration.
   registrationAllowed: false
   # "Forgot password" stays available, e.g. for a user whose set-password link expired.
   resetPasswordAllowed: true
@@ -75,7 +75,7 @@ realm:
       passwordKey: password
       clientSecretKey: clientSecret
 
-# Realm groups (top level). Membership is managed elsewhere (identity-lifecycle), never here.
+# Realm groups (top level). Membership is managed by the joiner flow, never here.
 # Names are emitted verbatim in the `groups` claim, so they must not start with "/" (that is a group
 # PATH) or "system:" (reserved for Kubernetes).
 groups:

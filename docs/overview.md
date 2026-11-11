@@ -16,7 +16,7 @@ The chart renders, in the release namespace:
 - a `KeycloakRealm`, a `KeycloakGroup` per entry of `groups`, and a `KeycloakClient` for the portal.
 
 Users and group memberships are deliberately **not** declared here: they belong to whoever runs the
-joiner flow (on Krateo, identity-lifecycle). Two writers on one user or membership fight forever.
+joiner flow. Two writers on one user or membership fight forever.
 
 Three properties are enforced by the templates and by CI gates in `hack/`:
 

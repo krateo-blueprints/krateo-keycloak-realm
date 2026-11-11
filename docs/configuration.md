@@ -16,7 +16,7 @@ timestamp: 2026-11-11T00:00:00Z
 | `configuration.name` | `keycloak-admin` | name of the per-kind Configurations |
 | `configuration.tokenSecret.{name,key}` | `keycloak-admin-token` / `token` | the KOG's token Secret, in the release namespace |
 | `realm.name` / `displayName` / `enabled` | `krateo` / `Krateo` / `true` | |
-| `realm.registrationAllowed` | `false` | accounts only through the access-request flow |
+| `realm.registrationAllowed` | `false` | accounts only through an administrator-approved joiner flow |
 | `realm.resetPasswordAllowed` / `verifyEmail` / `loginWithEmailAllowed` | `true` | |
 | `realm.actionTokenGeneratedByAdminLifespan` | `259200` | set-password link lifetime, seconds (72 h) |
 | `realm.events.{enabled,types,listeners}` | on, `SEND_EXECUTE_ACTIONS`/`SEND_ERROR`, `jboss-logging` | |
