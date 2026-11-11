@@ -25,10 +25,16 @@ timestamp: 2026-11-11T00:00:00Z
 | `realm.smtp.authType` | `basic` | `basic` or `token` |
 | `realm.smtp.token.{url,clientId,scope}` | scope `https://outlook.office365.com/.default` | required in token mode |
 | `realm.smtp.credentialsSecret.{name,userKey,passwordKey,clientSecretKey}` | `keycloak-smtp`, `username`, `password`, `clientSecret` | |
-| `groups[]` | `tenants`, `platform-admins` | `{name, attributes?}`; names must not start with `/` or `system:` |
+| `groups[]` | `tenants`, `platform-admins` | `{name, attributes?}`; names must not start with `/`, `system:` or `krateo:` |
 | `parentClient.{enabled,clientId,name,rootUrl}` | `true`, `krateo-portal`, `Krateo portal`, `""` | |
 | `parentClient.redirectUris[]` | `[]` | **required** when enabled |
 | `parentClient.webOrigins[]` / `postLogoutRedirectUris` / `groupsClaim` | `[]` / `"+"` / `groups` | |
+| `oidcConfig.enabled` / `name` | `true` / `keycloak` | render authn's OIDCConfig (only where the `oidc.authn.krateo.io/v1alpha1` API exists); `name` is the `?name=` of `/oidc/login` |
+| `oidcConfig.keycloakUrl` | `""` | **required** when enabled: Keycloak's public base URL (the keycloak chart's `keycloak.hostname`); issuer = `<keycloakUrl>/realms/<realm.name>` |
+| `oidcConfig.discoveryUrl` | `""` | where authn reads discovery; empty = `<issuer>/.well-known/openid-configuration` |
+| `oidcConfig.allowedGroups[]` | `[]` | empty = every name in `groups` |
+| `oidcConfig.additionalScopes` | `""` | |
+| `oidcConfig.graphics.{displayName,icon,backgroundColor,textColor}` | `Sign in with Keycloak`, `key`, `""`, `""` | the login button |
 
 Microsoft documents `https://outlook.office365.com/.default` as the SMTP client-credentials scope;
 the Keycloak server admin guide's example shows `https://outlook.office.com/.default`. The token URL

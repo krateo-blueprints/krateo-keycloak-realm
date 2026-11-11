@@ -41,3 +41,25 @@ Entra client secrets expire (at most 24 months), so plan the rotation.
 A wrong or missing credential does not fail at apply time: the realm reconciles, and sending fails
 with HTTP 500 from execute-actions-email and `KC-SERVICES0029` in the Keycloak log. Keycloak stores
 no `SEND_ERROR` event for an administrator-triggered email, so the caller's non-204 is the signal.
+
+## Sign-in (authn)
+
+Where authn is installed, the chart also renders authn's `OIDCConfig` (`oidcConfig.*`), derived from
+the same client and groups, so the portal shows "Sign in with Keycloak". The client is public: authn
+requires the portal's PKCE verifier and no secret exists.
+
+authn does not verify ID-token signatures; it relies on receiving the token directly from the token
+endpoint over **TLS** (OIDC Core 3.1.3.7). Keep that exchange on https:
+
+- **Default:** authn reads discovery from the public `keycloakUrl`, over the public TLS certificate.
+  The cluster's pods must reach that public host.
+- **In-cluster:** set `discoveryUrl` to Keycloak's in-cluster **https** Service (a certificate authn
+  trusts, e.g. from krateo-private-ca), and run Keycloak with `hostname-backchannel-dynamic: true` so
+  the discovery document names in-cluster token and userinfo endpoints while the issuer and the
+  browser's authorization endpoint stay public. Never point it at plain http: a forged token could
+  carry any group.
+
+Measured on GKE (authn 0.41.0, Keycloak 26.6.3, installed through a CompositionDefinition on
+core-provider 2.13.82, in-cluster https discovery with a public issuer): the OIDCConfig is rendered;
+a member of `tenants` signs in with PKCE and gets username `alice` and groups `[tenants]`; a user in
+no allowed group is refused with 403.
