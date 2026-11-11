@@ -19,6 +19,6 @@ spec:
     bearer:
       tokenRef:
         name: {{ $.Values.configuration.tokenSecret.name }}
-        namespace: {{ $.Values.configuration.tokenSecret.namespace | default $.Release.Namespace }}
+        namespace: {{ $.Release.Namespace }}
         key: {{ $.Values.configuration.tokenSecret.key }}
 {{- end }}

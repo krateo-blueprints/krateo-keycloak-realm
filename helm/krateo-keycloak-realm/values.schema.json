@@ -20,13 +20,11 @@
         },
         "tokenSecret": {
           "type": "object",
+          "additionalProperties": false,
           "properties": {
             "name": {
               "type": "string",
               "minLength": 1
-            },
-            "namespace": {
-              "type": "string"
             },
             "key": {
               "type": "string",
@@ -144,8 +142,25 @@
     "groups": {
       "type": "array",
       "items": {
-        "type": "string",
-        "minLength": 1
+        "type": "object",
+        "required": ["name"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "attributes": {
+            "description": "Keycloak group attributes: each key maps to a list of strings.",
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
       }
     },
     "parentClient": {

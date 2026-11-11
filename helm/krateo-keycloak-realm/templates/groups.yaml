@@ -4,12 +4,16 @@
 apiVersion: {{ $.Values.resourceGroup }}/v1
 kind: KeycloakGroup
 metadata:
-  name: {{ printf "%s-%s" (include "kr.objName" $.Values.realm.name) (include "kr.objName" .) | trunc 63 | trimSuffix "-" }}
+  name: {{ printf "%s-%s" (include "kr.objName" $.Values.realm.name) (include "kr.objName" .name) | trunc 63 | trimSuffix "-" }}
   namespace: {{ $.Release.Namespace }}
   labels:
     {{- include "kr.labels" $ | nindent 4 }}
 spec:
   {{- include "kr.configurationRef" $ | nindent 2 }}
   realm: {{ $.Values.realm.name | quote }}
-  name: {{ . | quote }}
+  name: {{ .name | quote }}
+  {{- with .attributes }}
+  attributes:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 {{- end }}

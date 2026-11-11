@@ -11,10 +11,10 @@ resourceGroup: keycloak.ogen.krateo.io
 # bearer-token Secret keycloak-config-kog rotates.
 configuration:
   name: keycloak-admin
+  # In the release namespace: install this chart where keycloak-config-kog keeps the token, so no
+  # cross-namespace Secret access is ever needed.
   tokenSecret:
     name: keycloak-admin-token
-    # Empty = the release namespace.
-    namespace: ""
     key: token
 
 realm:
@@ -55,9 +55,11 @@ realm:
       passwordKey: password
 
 # Realm groups (top level). Membership is managed elsewhere (identity-lifecycle), never here.
+# Names are emitted verbatim in the `groups` claim, so they must not start with "/" (that is a group
+# PATH) or "system:" (reserved for Kubernetes).
 groups:
-  - tenants
-  - platform-admins
+  - name: tenants
+  - name: platform-admins
 
 # The portal's OIDC client: public (no secret), authorization code + PKCE S256, with a `groups`
 # claim carrying bare group names (`tenants`, not `/tenants`).
