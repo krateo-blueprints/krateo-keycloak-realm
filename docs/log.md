@@ -9,6 +9,21 @@ timestamp: 2026-11-11T00:00:00Z
 
 # Log
 
+## 2026-11-12 — 0.3.2: duplicate event types and listeners are refused at render
+
+`realm.events.types` and `realm.events.listeners` are sets in Keycloak, and keycloak-config-kog 0.7.1
+with oasgen-provider 0.62.0 compares them as sets, so a duplicate in values could never converge (the
+realm would be re-PUT and latch `Ready=False`). The chart now fails the render with the key and the
+value, e.g. `realm.events.types: "LOGIN" is listed twice`. It is a render-time check on purpose, not
+`uniqueItems` in values.schema.json: crdgen turns that into `x-kubernetes-list-type: set` on the
+Composition (and Installer) CRDs, a validation tightening on resources that already exist. No CRD field
+and no values key changed; the defaults (23 types, 1 listener) are duplicate-free. CI
+(`hack/check-event-types.py`) requires a duplicate in either list to fail with that message.
+
+Also measured for 0.3.1 on demo's upgrade path (GKE, oasgen 0.62.0): keycloak-config-kog 0.7.0 with
+realm 0.3.1 re-PUT the realm every 3 minutes; `helm upgrade` of the KOG to 0.7.1 alone made it up to
+date on the next observation and `Ready=True`, with no controller restart.
+
 ## 2026-11-12 — 0.3.1: user and admin events that actually record
 
 Up to 0.3.0 the realm enabled two user event types that are not Keycloak EventTypes

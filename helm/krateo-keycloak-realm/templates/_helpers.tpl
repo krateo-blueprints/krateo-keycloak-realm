@@ -21,6 +21,19 @@ configurationRef:
 {{- end -}}
 
 {{- define "kr.check" -}}
+{{- /* Keycloak stores the realm's event types and listeners as sets, and the KOG compares them as
+sets: a duplicate here never matches what Keycloak returns, so the realm would be re-PUT and never
+converge. Refuse it at render, naming the key and the value. A render check rather than uniqueItems
+in values.schema.json, which crdgen would turn into a CRD-level constraint on existing resources. */ -}}
+{{- range $key := list "types" "listeners" -}}
+{{- $seen := dict -}}
+{{- range (index $.Values.realm.events $key | default list) -}}
+{{- if hasKey $seen (toString .) -}}
+{{- fail (printf "realm.events.%s: %q is listed twice (Keycloak keeps these as a set; remove the duplicate)" $key (toString .)) -}}
+{{- end -}}
+{{- $_ := set $seen (toString .) true -}}
+{{- end -}}
+{{- end -}}
 {{- range .Values.groups -}}
 {{- if or (hasPrefix "/" .name) (hasPrefix "system:" .name) (hasPrefix "krateo:" .name) -}}
 {{- fail (printf "group %q: a group name must not start with \"/\" (a group path), \"system:\" (reserved for Kubernetes) or \"krateo:\" (reserved for authn, e.g. krateo:loa:2)" .name) -}}
