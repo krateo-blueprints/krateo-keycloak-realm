@@ -82,6 +82,31 @@ groups:
   - name: tenants
   - name: platform-admins
 
+# The realm's declarative user profile: which user attributes exist and who may see or change them.
+# Keycloak keeps ONE profile per realm, so this chart owns it whole. It is rendered as Keycloak's own
+# default profile (username, email, firstName, lastName and the user-metadata group, verbatim from
+# files/keycloak-26-default-user-profile.json, so existing users meet exactly the rules they met
+# before) followed by `attributes` below. Attributes that are not declared stay disabled: Keycloak
+# drops them (unmanagedAttributePolicy is left unset).
+userProfile:
+  enabled: true
+  # Appended after the four built-ins, which cannot be redeclared here. Keycloak's attribute shape:
+  # name, displayName, group, multivalued, validations, annotations, required, permissions, selector.
+  attributes:
+    # Set by the joiner flow on every user it creates: the uid of the AccessRequest that created the
+    # user, so a joiner that crashed before recording the new user's id can still adopt it. Seen and
+    # changed only by administrators (the Admin API); never shown to, or editable by, the user.
+    - name: krateo-access-request-uid
+      displayName: Access request
+      permissions:
+        view:
+          - admin
+        edit:
+          - admin
+      validations:
+        length:
+          max: 36
+
 # The portal's OIDC client: public (no secret), authorization code + PKCE S256, with a `groups`
 # claim carrying bare group names (`tenants`, not `/tenants`).
 parentClient:

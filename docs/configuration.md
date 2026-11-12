@@ -26,6 +26,8 @@ timestamp: 2026-11-11T00:00:00Z
 | `realm.smtp.token.{url,clientId,scope}` | scope `https://outlook.office365.com/.default` | required in token mode |
 | `realm.smtp.credentialsSecret.{name,userKey,passwordKey,clientSecretKey}` | `keycloak-smtp`, `username`, `password`, `clientSecret` | |
 | `groups[]` | `tenants`, `platform-admins` | `{name, attributes?}`; names must not start with `/`, `system:` or `krateo:` |
+| `userProfile.enabled` | `true` | render the realm's whole user profile (needs keycloak-config-kog >= 0.7.0): Keycloak's default `username`, `email`, `firstName`, `lastName` verbatim, then `attributes` |
+| `userProfile.attributes[]` | `krateo-access-request-uid` (admin view/edit only, length <= 36) | Keycloak attribute shape: `name`, `displayName`, `group`, `multivalued`, `validations`, `annotations`, `required`, `permissions{view,edit}`, `selector`; a built-in name is refused |
 | `parentClient.{enabled,clientId,name,rootUrl}` | `true`, `krateo-portal`, `Krateo portal`, `""` | |
 | `parentClient.redirectUris[]` | `[]` | **required** when enabled |
 | `parentClient.webOrigins[]` / `postLogoutRedirectUris` / `groupsClaim` | `[]` / `"+"` / `groups` | |

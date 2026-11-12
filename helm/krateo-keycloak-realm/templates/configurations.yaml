@@ -3,6 +3,9 @@
 {{- if .Values.parentClient.enabled }}
 {{- $kinds = append $kinds "KeycloakClientConfiguration" }}
 {{- end }}
+{{- if .Values.userProfile.enabled }}
+{{- $kinds = append $kinds "KeycloakUserProfileConfiguration" }}
+{{- end }}
 {{- range $kinds }}
 ---
 # How the KOG's {{ trimSuffix "Configuration" . }} controller authenticates: the bearer token that

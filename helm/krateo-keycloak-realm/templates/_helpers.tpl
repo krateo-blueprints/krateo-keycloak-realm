@@ -26,6 +26,18 @@ configurationRef:
 {{- fail (printf "group %q: a group name must not start with \"/\" (a group path), \"system:\" (reserved for Kubernetes) or \"krateo:\" (reserved for authn, e.g. krateo:loa:2)" .name) -}}
 {{- end -}}
 {{- end -}}
+{{- if .Values.userProfile.enabled -}}
+{{- $seen := dict "username" true "email" true "firstName" true "lastName" true -}}
+{{- range .Values.userProfile.attributes -}}
+{{- if not .name -}}
+{{- fail "userProfile.attributes: every attribute needs a name" -}}
+{{- end -}}
+{{- if hasKey $seen .name -}}
+{{- fail (printf "userProfile.attributes: %q is declared twice, or redeclares a built-in (username, email, firstName and lastName come from Keycloak's default profile)" .name) -}}
+{{- end -}}
+{{- $_ := set $seen .name true -}}
+{{- end -}}
+{{- end -}}
 {{- if and .Values.parentClient.enabled (not .Values.parentClient.redirectUris) -}}
 {{- fail "parentClient.redirectUris is required when parentClient.enabled (e.g. https://cmp.example.com/auth?kind=oidc)" -}}
 {{- end -}}

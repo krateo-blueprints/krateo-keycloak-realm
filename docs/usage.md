@@ -11,8 +11,25 @@ timestamp: 2026-11-11T00:00:00Z
 
 ## Prerequisites
 
-keycloak-config-kog >= 0.6.0 in the same namespace, its admin token Secret synced, and a Keycloak
+keycloak-config-kog >= 0.7.0 in the same namespace (0.6.0 with `userProfile.enabled: false`), its admin token Secret synced, and a Keycloak
 >= 26.2 for token mail.
+
+## User profile
+
+Keycloak keeps one user profile per realm (the attributes users have, and who may see or change
+each), and drops any attribute it does not declare. The chart renders the whole profile as one
+`KeycloakUserProfile`: Keycloak 26's default profile, verbatim from
+`files/keycloak-26-default-user-profile.json` (`username`, `email`, `firstName`, `lastName` and the
+`user-metadata` group), followed by `userProfile.attributes`. Keeping the built-ins byte-identical to
+Keycloak's default means users that existed before the chart managed the profile, such as migrated
+accounts, meet exactly the rules they met before.
+
+The default `attributes` declare `krateo-access-request-uid`, which the joiner flow sets on each user
+it creates. It is visible and editable through the Admin API only: the user never sees it in the
+account console, and the account API refuses a value the user sends for it (HTTP 400,
+`error-user-attribute-read-only`). Add your own attributes after it; a
+redeclared built-in fails the render. Changes made to the profile in the admin console are reverted
+by the KOG. Uninstalling, or setting `userProfile.enabled: false`, leaves the realm's profile as it is.
 
 ## Mail
 
