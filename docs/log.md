@@ -9,6 +9,18 @@ timestamp: 2026-11-11T00:00:00Z
 
 # Log
 
+## 2026-11-12 — 0.3.0: the realm's user profile
+
+The chart now owns the realm's whole user profile through keycloak-config-kog 0.7.0's
+`KeycloakUserProfile`: Keycloak 26's default profile verbatim
+(`files/keycloak-26-default-user-profile.json`, read from a fresh realm on Keycloak 26.6.3), then
+`userProfile.attributes`. The default attributes declare `krateo-access-request-uid` (admin view and
+edit only, at most 36 characters), set by the joiner flow on the users it creates; before 0.3.0
+Keycloak dropped it. Unmanaged attributes stay disabled. Needs keycloak-config-kog >= 0.7.0, or
+`userProfile.enabled: false` on 0.6.0. Validated live (see keycloak-config-kog's 0.7.0 log entry):
+users that existed before the profile still update, the attribute is invisible and read-only to the
+user, and a console edit is reverted.
+
 ## 2026-11-11 — 0.2.0
 
 Renders authn's `OIDCConfig` from the realm's own client and groups (one source for issuer, client id,

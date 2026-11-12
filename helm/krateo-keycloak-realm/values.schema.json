@@ -200,6 +200,112 @@
         }
       }
     },
+    "userProfile": {
+      "type": "object",
+      "description": "The realm's whole declarative user profile: Keycloak's default (username, email, firstName, lastName) followed by these attributes. Undeclared attributes stay disabled.",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "attributes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Not username, email, firstName or lastName: those come from Keycloak's default profile (the chart fails on a redeclaration)."
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "group": {
+                "type": "string"
+              },
+              "multivalued": {
+                "type": "boolean"
+              },
+              "validations": {
+                "description": "Validators keyed by id, e.g. length: {max: 36}; the KOG's KeycloakUserProfile CRD validates their shape.",
+                "type": "object"
+              },
+              "annotations": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "required": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "roles": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "admin",
+                        "user"
+                      ]
+                    }
+                  },
+                  "scopes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "permissions": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "view": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "admin",
+                        "user"
+                      ]
+                    }
+                  },
+                  "edit": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "admin",
+                        "user"
+                      ]
+                    }
+                  }
+                }
+              },
+              "selector": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "scopes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "parentClient": {
       "type": "object",
       "properties": {
