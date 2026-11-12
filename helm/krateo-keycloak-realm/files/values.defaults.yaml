@@ -1,0 +1,183 @@
+# The defaults of values.yaml, as a chart file the templates can read (kr.values in _helpers.tpl).
+# `helm upgrade --reuse-values` does not apply values.yaml's defaults, and Helm does not expose
+# values.yaml through .Files. CI (hack/check-reuse-values.py) requires this file to equal values.yaml.
+# krateo-keycloak-realm
+#
+# Every object here is a keycloak-config-kog custom resource, reconciled against Keycloak by the
+# KOG's controllers (which also heal changes made in the Keycloak console). Install it AFTER
+# keycloak-config-kog >= 0.6.0, in the namespace whose token Secret the KOG keeps fresh.
+
+# API group the KOG generates its kinds in (keycloak-config-kog's `resourceGroup`).
+resourceGroup: keycloak.ogen.krateo.io
+
+# What happens IN KEYCLOAK when one of this chart's resources is deleted (helm uninstall, a prune, a
+# kubectl delete). `orphan` (default): the Kubernetes object goes, the realm, its groups and the client
+# stay in Keycloak untouched, so a mistaken uninstall or prune can never wipe the realm and every user
+# in it. A reinstall adopts them again. `delete`: Keycloak objects are deleted with their resources;
+# set it explicitly only to really decommission the realm. Applied as krateo.io/deletion-policy.
+deletionPolicy: orphan
+
+# How the KOG controllers authenticate: one <Kind>Configuration per kind, all pointing at the
+# bearer-token Secret keycloak-config-kog rotates.
+configuration:
+  name: keycloak-admin
+  # In the release namespace: install this chart where keycloak-config-kog keeps the token, so no
+  # cross-namespace Secret access is ever needed.
+  tokenSecret:
+    name: keycloak-admin-token
+    key: token
+
+realm:
+  name: krateo
+  displayName: Krateo
+  enabled: true
+  # Accounts are created only through an administrator-approved joiner flow, never by self-registration.
+  registrationAllowed: false
+  # "Forgot password" stays available, e.g. for a user whose set-password link expired.
+  resetPasswordAllowed: true
+  verifyEmail: true
+  loginWithEmailAllowed: true
+  # Lifetime of administrator-sent action links (the set-password email), in seconds: 72 hours.
+  actionTokenGeneratedByAdminLifespan: 259200
+  # User events (logins, the set-password link, profile changes) kept by Keycloak for `expiration`
+  # seconds. `types` must be Keycloak EventType names: CI checks them against the pinned list in
+  # hack/testdata (an unknown name is stored by Keycloak without complaint, records nothing, and
+  # makes event queries by that type fail with HTTP 500).
+  events:
+    enabled: true
+    # 90 days.
+    expiration: 7776000
+    types:
+      - LOGIN
+      - LOGIN_ERROR
+      - LOGOUT
+      - LOGOUT_ERROR
+      - CODE_TO_TOKEN_ERROR
+      # The set-password link sent by an administrator: the user opening it, and its failures.
+      - EXECUTE_ACTIONS
+      - EXECUTE_ACTIONS_ERROR
+      - EXECUTE_ACTION_TOKEN
+      - EXECUTE_ACTION_TOKEN_ERROR
+      - UPDATE_CREDENTIAL
+      - UPDATE_CREDENTIAL_ERROR
+      - VERIFY_EMAIL
+      - VERIFY_EMAIL_ERROR
+      - SEND_VERIFY_EMAIL
+      - SEND_VERIFY_EMAIL_ERROR
+      - SEND_RESET_PASSWORD
+      - SEND_RESET_PASSWORD_ERROR
+      - RESET_PASSWORD
+      - RESET_PASSWORD_ERROR
+      - UPDATE_PROFILE
+      - UPDATE_PROFILE_ERROR
+      - UPDATE_EMAIL
+      - UPDATE_EMAIL_ERROR
+    listeners:
+      - jboss-logging
+  # Admin events: what administrators and service accounts change through the Admin API (e.g. a
+  # user created by the joiner flow, a set-password email sent). Kept for events.expiration too.
+  adminEvents:
+    enabled: true
+    # Store each change's JSON body too. Off: a user representation carries personal data.
+    includeRepresentation: false
+  # Outgoing mail. Off by default: an install without SMTP gets a realm that sends nothing.
+  smtp:
+    enabled: false
+    host: ""
+    port: "587"
+    from: ""
+    fromDisplayName: ""
+    replyTo: ""
+    auth: "true"
+    starttls: "true"
+    ssl: "false"
+    # basic: SMTP AUTH with a password. token: XOAUTH2 with an OAuth2 client-credentials token
+    # (Keycloak >= 26.2), required by providers that disable password SMTP AUTH, e.g. Microsoft 365
+    # (host smtp.office365.com, port "587", starttls "true").
+    authType: basic
+    token:
+      # e.g. https://login.microsoftonline.com/<tenant-id>/oauth2/v2.0/token
+      url: ""
+      clientId: ""
+      # Microsoft documents https://outlook.office365.com/.default for SMTP client credentials; the
+      # Keycloak server admin guide's example shows https://outlook.office.com/.default. The default
+      # follows Microsoft.
+      scope: https://outlook.office365.com/.default
+    # The SMTP credentials, as keys of one Secret in the release namespace. Placed by the operator of
+    # the cluster; never chart values. userKey is the SMTP (SASL) user in both modes, e.g. the sending
+    # mailbox for Microsoft 365; passwordKey is used by authType basic, clientSecretKey by token.
+    credentialsSecret:
+      name: keycloak-smtp
+      userKey: username
+      passwordKey: password
+      clientSecretKey: clientSecret
+
+# Realm groups (top level). Membership is managed by the joiner flow, never here.
+# Names are emitted verbatim in the `groups` claim, so they must not start with "/" (that is a group
+# PATH) or "system:" (reserved for Kubernetes).
+groups:
+  - name: tenants
+  - name: platform-admins
+
+# The realm's declarative user profile: which user attributes exist and who may see or change them.
+# Keycloak keeps ONE profile per realm, so this chart owns it whole. It is rendered as Keycloak's own
+# default profile (username, email, firstName, lastName and the user-metadata group, verbatim from
+# files/keycloak-26-default-user-profile.json, so existing users meet exactly the rules they met
+# before) followed by `attributes` below. Attributes that are not declared stay disabled: Keycloak
+# drops them (unmanagedAttributePolicy is left unset).
+userProfile:
+  enabled: true
+  # Appended after the four built-ins, which cannot be redeclared here. Keycloak's attribute shape:
+  # name, displayName, group, multivalued, validations, annotations, required, permissions, selector.
+  attributes:
+    # Set by the joiner flow on every user it creates: the uid of the AccessRequest that created the
+    # user, so a joiner that crashed before recording the new user's id can still adopt it. Seen and
+    # changed only by administrators (the Admin API); never shown to, or editable by, the user.
+    - name: krateo-access-request-uid
+      displayName: Access request
+      permissions:
+        view:
+          - admin
+        edit:
+          - admin
+      validations:
+        length:
+          max: 36
+
+# The portal's OIDC client: public (no secret), authorization code + PKCE S256, with a `groups`
+# claim carrying bare group names (`tenants`, not `/tenants`).
+parentClient:
+  enabled: true
+  clientId: krateo-portal
+  name: Krateo portal
+  rootUrl: ""
+  # REQUIRED when enabled, e.g. https://cmp.example.com/auth?kind=oidc
+  redirectUris: []
+  webOrigins: []
+  postLogoutRedirectUris: "+"
+  groupsClaim: groups
+
+# The authn OIDCConfig that puts "sign in with Keycloak" on the portal, derived from the same values
+# as the client above so the two cannot drift: clientID = parentClient.clientId, redirectURI =
+# parentClient.redirectUris[0], allowedGroups = the realm groups. Public client: no secret, so authn
+# requires the portal's PKCE verifier. Rendered only where authn's OIDCConfig API exists.
+oidcConfig:
+  enabled: true
+  name: keycloak
+  # REQUIRED when enabled: Keycloak's public base URL (the keycloak chart's keycloak.hostname), e.g.
+  # https://keycloak.example.com. The issuer is <keycloakUrl>/realms/<realm.name>.
+  keycloakUrl: ""
+  # Where authn reads the discovery document. Empty = <issuer>/.well-known/openid-configuration.
+  # Point it at Keycloak's in-cluster https Service when authn cannot reach the public URL; with
+  # Keycloak's hostname-backchannel-dynamic option the document then names in-cluster token and
+  # userinfo endpoints while the issuer and the browser's authorization endpoint stay public.
+  discoveryUrl: ""
+  # Empty = every name in `groups`.
+  allowedGroups: []
+  additionalScopes: ""
+  graphics:
+    displayName: Sign in with Keycloak
+    icon: key
+    backgroundColor: ""
+    textColor: ""
+

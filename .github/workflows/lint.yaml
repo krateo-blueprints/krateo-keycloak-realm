@@ -22,6 +22,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          # The reuse-values gate reads values.yaml at previous release tags.
+          fetch-depth: 0
 
       - name: Install Helm
         uses: azure/setup-helm@v5
@@ -44,6 +47,9 @@ jobs:
           # Keycloak stores any event type name and records nothing for an unknown one (0.2.0/0.3.0
           # shipped two). Every enabled type must be in the pinned Keycloak EventType list.
           python3 hack/check-event-types.py
+          # `helm upgrade --reuse-values` upgrades with the previous release's values and skips this
+          # chart's defaults: 0.3.0-0.3.2 failed it from 0.1.0/0.2.0/0.3.0 with a nil pointer.
+          python3 hack/check-reuse-values.py
 
   lint:
     runs-on: ubuntu-latest

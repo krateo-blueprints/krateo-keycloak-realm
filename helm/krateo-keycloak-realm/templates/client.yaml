@@ -1,13 +1,14 @@
+{{- $v := include "kr.values" . | fromYaml }}
 {{- include "kr.check" . }}
-{{- $c := .Values.parentClient }}
+{{- $c := $v.parentClient }}
 {{- if $c.enabled }}
 # The portal's OIDC client: public (the browser holds no secret), authorization code with PKCE S256
 # only, and a `groups` claim with bare group names (full.path "false": `tenants`, not `/tenants`),
 # which is what the portal's group-based authorization matches.
-apiVersion: {{ .Values.resourceGroup }}/v1
+apiVersion: {{ $v.resourceGroup }}/v1
 kind: KeycloakClient
 metadata:
-  name: {{ printf "%s-%s" (include "kr.objName" .Values.realm.name) (include "kr.objName" $c.clientId) | trunc 63 | trimSuffix "-" }}
+  name: {{ printf "%s-%s" (include "kr.objName" $v.realm.name) (include "kr.objName" $c.clientId) | trunc 63 | trimSuffix "-" }}
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "kr.labels" . | nindent 4 }}
@@ -15,7 +16,7 @@ metadata:
     {{- include "kr.deletionPolicy" . | nindent 4 }}
 spec:
   {{- include "kr.configurationRef" . | nindent 2 }}
-  realm: {{ .Values.realm.name | quote }}
+  realm: {{ $v.realm.name | quote }}
   clientId: {{ $c.clientId | quote }}
   name: {{ $c.name | quote }}
   enabled: true

@@ -1,14 +1,15 @@
+{{- $v := include "kr.values" . | fromYaml }}
 {{- include "kr.check" . }}
-{{- if .Values.userProfile.enabled }}
+{{- if $v.userProfile.enabled }}
 {{- $default := .Files.Get "files/keycloak-26-default-user-profile.json" | fromJson }}
 ---
 # The realm's whole user profile: Keycloak's default (verbatim) followed by userProfile.attributes.
 # keycloak-config-kog >= 0.7.0 adopts the realm's profile and replaces it with this one; deleting
 # this resource leaves the realm's profile as it is.
-apiVersion: {{ .Values.resourceGroup }}/v1
+apiVersion: {{ $v.resourceGroup }}/v1
 kind: KeycloakUserProfile
 metadata:
-  name: {{ include "kr.objName" .Values.realm.name }}-user-profile
+  name: {{ include "kr.objName" $v.realm.name }}-user-profile
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "kr.labels" . | nindent 4 }}
@@ -16,9 +17,9 @@ metadata:
     {{- include "kr.deletionPolicy" . | nindent 4 }}
 spec:
   {{- include "kr.configurationRef" . | nindent 2 }}
-  realm: {{ .Values.realm.name | quote }}
+  realm: {{ $v.realm.name | quote }}
   attributes:
-    {{- toYaml (concat $default.attributes .Values.userProfile.attributes) | nindent 4 }}
+    {{- toYaml (concat $default.attributes $v.userProfile.attributes) | nindent 4 }}
   groups:
     {{- toYaml $default.groups | nindent 4 }}
 {{- end }}

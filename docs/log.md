@@ -9,6 +9,18 @@ timestamp: 2026-11-11T00:00:00Z
 
 # Log
 
+## 2026-11-12 — 0.3.3: upgrades with `helm upgrade --reuse-values` work
+
+`helm upgrade --reuse-values` to 0.3.0, 0.3.1 or 0.3.2 failed from an older release with a nil pointer
+(`userProfile` from 0.1.0 or 0.2.0, `realm.adminEvents` from 0.3.0): reuse-values upgrades with the
+previous release's values and does not apply the new chart's defaults. Every template and helper now
+reads values through `kr.values`, which merges the chart's defaults (`files/values.defaults.yaml`, a
+copy of values.yaml that CI keeps equal; Helm does not expose values.yaml through `.Files`) under the
+supplied values. Explicit `false`, `""` and `[]` still win. Fresh renders are byte-identical to 0.3.2
+(default values, the Microsoft 365 example, and an override set with `false` and an empty list). CI
+gate `hack/check-reuse-values.py` renders under the values of 0.1.0 to 0.3.2 and requires the same
+objects as a default render.
+
 ## 2026-11-12 — 0.3.2: duplicate event types and listeners are refused at render
 
 `realm.events.types` and `realm.events.listeners` are sets in Keycloak, and keycloak-config-kog 0.7.1
