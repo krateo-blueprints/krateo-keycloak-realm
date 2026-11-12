@@ -24,6 +24,12 @@ Also: `smtpServer.authType` (and the token fields) are rendered only when `realm
 
 Measured on GKE (Keycloak 26.6.3) through the joiner flow; see [usage](usage.md#events).
 
+Requires keycloak-config-kog >= 0.7.1 and oasgen-provider >= 0.62.0 (annotations
+`krateo.io/requires-*`). Keycloak returns the event types in its own order: with 23 of them,
+oasgen-provider 0.61.0 PUT the realm four times, 3 minutes apart, then stopped ("Drift is not
+converging") and left it `Ready=False`; 0.62.0 with keycloak-config-kog 0.7.1 issued no PUT over 15
+minutes and kept it `Ready=True`, while still restoring an event type removed out of band with one PUT.
+
 ## 2026-11-12 — 0.3.0: the realm's user profile
 
 The chart now owns the realm's whole user profile through keycloak-config-kog 0.7.0's

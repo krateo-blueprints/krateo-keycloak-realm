@@ -11,7 +11,7 @@ timestamp: 2026-11-11T00:00:00Z
 
 ## Prerequisites
 
-keycloak-config-kog >= 0.7.0 in the same namespace (0.6.0 with `userProfile.enabled: false`), its admin token Secret synced, and a Keycloak
+keycloak-config-kog >= 0.7.1 and oasgen-provider >= 0.62.0 (Chart.yaml annotations `krateo.io/requires-*`), in the same namespace, its admin token Secret synced, and a Keycloak
 >= 26.2 for token mail.
 
 ## User profile
