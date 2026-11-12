@@ -3,8 +3,8 @@ name: krateo-keycloak-realm
 description: >-
   A Keycloak parent realm for a Krateo platform, declared as keycloak-config-kog custom resources:
   realm settings (registration off, set-password and verify-email links by email, events), its
-  groups, and the portal's public PKCE OIDC client with a groups claim. Requires keycloak-config-kog
-  >= 0.6.0 installed and authenticated against the target Keycloak.
+  groups, and the portal's public PKCE OIDC client with a groups claim, and the realm's user profile. Requires keycloak-config-kog
+  >= 0.7.0 installed and authenticated against the target Keycloak.
 type: application
 version: CHART_VERSION
 appVersion: "1.0.0"
@@ -20,3 +20,9 @@ keywords:
   - oidc
 maintainers:
   - name: krateo
+annotations:
+  # Minimum versions, as numbers: 0.3.1 enables 23 event types, which Keycloak returns in its own order;
+  # keycloak-config-kog 0.7.1 declares them a set and oasgen-provider 0.62.0 compares sets unordered.
+  # On older releases the realm is re-PUT a few times and then latches Ready=False.
+  krateo.io/requires-keycloak-config-kog: ">= 0.7.1"
+  krateo.io/requires-oasgen-provider: ">= 0.62.0"

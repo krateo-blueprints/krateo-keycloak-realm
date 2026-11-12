@@ -30,6 +30,16 @@ spec:
   eventsListeners:
     {{- toYaml . | nindent 4 }}
   {{- end }}
+  {{- with $r.events.expiration }}
+  eventsExpiration: {{ int64 . }}
+  {{- end }}
+  adminEventsEnabled: {{ $r.adminEvents.enabled }}
+  adminEventsDetailsEnabled: {{ $r.adminEvents.includeRepresentation }}
+  {{- if and $r.adminEvents.enabled $r.events.expiration }}
+  # Keycloak 26 keeps admin-event retention as a realm attribute, separate from eventsExpiration.
+  attributes:
+    adminEventsExpiration: {{ $r.events.expiration | int64 | toString | quote }}
+  {{- end }}
   {{- if $r.smtp.enabled }}
   smtpServer:
     host: {{ $r.smtp.host | quote }}
@@ -44,11 +54,15 @@ spec:
     auth: {{ $r.smtp.auth | toString | quote }}
     starttls: {{ $r.smtp.starttls | toString | quote }}
     ssl: {{ $r.smtp.ssl | toString | quote }}
+    {{- /* Keycloak keeps authType only when auth is on (measured on 26.6.3); rendering it with auth
+    "false" made the CR differ from the realm forever. */}}
+    {{- if eq ($r.smtp.auth | toString) "true" }}
     authType: {{ $r.smtp.authType | quote }}
     {{- if eq $r.smtp.authType "token" }}
     authTokenUrl: {{ $r.smtp.token.url | quote }}
     authTokenClientId: {{ $r.smtp.token.clientId | quote }}
     authTokenScope: {{ $r.smtp.token.scope | quote }}
+    {{- end }}
     {{- end }}
   {{- if eq ($r.smtp.auth | toString) "true" }}
   # The SMTP credentials: read by the controller from this Secret, never stored in the CR. Only the
