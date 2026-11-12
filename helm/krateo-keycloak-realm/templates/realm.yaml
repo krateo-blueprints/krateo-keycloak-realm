@@ -1,6 +1,7 @@
+{{- $v := include "kr.values" . | fromYaml }}
 {{- include "kr.check" . }}
-{{- $r := .Values.realm }}
-apiVersion: {{ .Values.resourceGroup }}/v1
+{{- $r := $v.realm }}
+apiVersion: {{ $v.resourceGroup }}/v1
 kind: KeycloakRealm
 metadata:
   name: {{ include "kr.objName" $r.name }}

@@ -1,10 +1,11 @@
+{{- $v := include "kr.values" . | fromYaml }}
 {{- include "kr.check" . }}
-{{- range .Values.groups }}
+{{- range $v.groups }}
 ---
-apiVersion: {{ $.Values.resourceGroup }}/v1
+apiVersion: {{ $v.resourceGroup }}/v1
 kind: KeycloakGroup
 metadata:
-  name: {{ printf "%s-%s" (include "kr.objName" $.Values.realm.name) (include "kr.objName" .name) | trunc 63 | trimSuffix "-" }}
+  name: {{ printf "%s-%s" (include "kr.objName" $v.realm.name) (include "kr.objName" .name) | trunc 63 | trimSuffix "-" }}
   namespace: {{ $.Release.Namespace }}
   labels:
     {{- include "kr.labels" $ | nindent 4 }}
@@ -12,7 +13,7 @@ metadata:
     {{- include "kr.deletionPolicy" $ | nindent 4 }}
 spec:
   {{- include "kr.configurationRef" $ | nindent 2 }}
-  realm: {{ $.Values.realm.name | quote }}
+  realm: {{ $v.realm.name | quote }}
   name: {{ .name | quote }}
   {{- with .attributes }}
   attributes:

@@ -1,3 +1,15 @@
+{{- /*
+The effective values: this chart's defaults (files/values.defaults.yaml, a copy of values.yaml that CI
+keeps equal) with the supplied values merged over them. `helm upgrade --reuse-values` upgrades with the
+PREVIOUS release's values and does not apply the new chart's defaults, so a key added since (e.g.
+userProfile in 0.3.0, realm.adminEvents in 0.3.1) would be missing and fail with a nil pointer. Every
+template and helper reads values through this. Explicit empty values (false, "", []) still win.
+*/ -}}
+{{- define "kr.values" -}}
+{{- $defaults := .Files.Get "files/values.defaults.yaml" | fromYaml | default dict -}}
+{{- toYaml (mergeOverwrite (deepCopy $defaults) (deepCopy .Values)) -}}
+{{- end -}}
+
 {{- define "kr.labels" -}}
 app.kubernetes.io/name: krateo-keycloak-realm
 app.kubernetes.io/instance: {{ .Release.Name }}
@@ -6,12 +18,14 @@ helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 {{- end -}}
 
 {{- define "kr.deletionPolicy" -}}
-krateo.io/deletion-policy: {{ .Values.deletionPolicy }}
+{{- $v := include "kr.values" . | fromYaml -}}
+krateo.io/deletion-policy: {{ $v.deletionPolicy }}
 {{- end -}}
 
 {{- define "kr.configurationRef" -}}
+{{- $v := include "kr.values" . | fromYaml -}}
 configurationRef:
-  name: {{ .Values.configuration.name }}
+  name: {{ $v.configuration.name }}
   namespace: {{ .Release.Namespace }}
 {{- end -}}
 
@@ -21,27 +35,28 @@ configurationRef:
 {{- end -}}
 
 {{- define "kr.check" -}}
+{{- $v := include "kr.values" . | fromYaml -}}
 {{- /* Keycloak stores the realm's event types and listeners as sets, and the KOG compares them as
 sets: a duplicate here never matches what Keycloak returns, so the realm would be re-PUT and never
 converge. Refuse it at render, naming the key and the value. A render check rather than uniqueItems
 in values.schema.json, which crdgen would turn into a CRD-level constraint on existing resources. */ -}}
 {{- range $key := list "types" "listeners" -}}
 {{- $seen := dict -}}
-{{- range (index $.Values.realm.events $key | default list) -}}
+{{- range (index $v.realm.events $key | default list) -}}
 {{- if hasKey $seen (toString .) -}}
 {{- fail (printf "realm.events.%s: %q is listed twice (Keycloak keeps these as a set; remove the duplicate)" $key (toString .)) -}}
 {{- end -}}
 {{- $_ := set $seen (toString .) true -}}
 {{- end -}}
 {{- end -}}
-{{- range .Values.groups -}}
+{{- range $v.groups -}}
 {{- if or (hasPrefix "/" .name) (hasPrefix "system:" .name) (hasPrefix "krateo:" .name) -}}
 {{- fail (printf "group %q: a group name must not start with \"/\" (a group path), \"system:\" (reserved for Kubernetes) or \"krateo:\" (reserved for authn, e.g. krateo:loa:2)" .name) -}}
 {{- end -}}
 {{- end -}}
-{{- if .Values.userProfile.enabled -}}
+{{- if $v.userProfile.enabled -}}
 {{- $seen := dict "username" true "email" true "firstName" true "lastName" true -}}
-{{- range .Values.userProfile.attributes -}}
+{{- range $v.userProfile.attributes -}}
 {{- if not .name -}}
 {{- fail "userProfile.attributes: every attribute needs a name" -}}
 {{- end -}}
@@ -51,17 +66,17 @@ in values.schema.json, which crdgen would turn into a CRD-level constraint on ex
 {{- $_ := set $seen .name true -}}
 {{- end -}}
 {{- end -}}
-{{- if and .Values.parentClient.enabled (not .Values.parentClient.redirectUris) -}}
+{{- if and $v.parentClient.enabled (not $v.parentClient.redirectUris) -}}
 {{- fail "parentClient.redirectUris is required when parentClient.enabled (e.g. https://cmp.example.com/auth?kind=oidc)" -}}
 {{- end -}}
-{{- if .Values.realm.smtp.enabled -}}
-{{- if or (not .Values.realm.smtp.host) (not .Values.realm.smtp.from) -}}
+{{- if $v.realm.smtp.enabled -}}
+{{- if or (not $v.realm.smtp.host) (not $v.realm.smtp.from) -}}
 {{- fail "realm.smtp.host and realm.smtp.from are required when realm.smtp.enabled" -}}
 {{- end -}}
-{{- if and (eq .Values.realm.smtp.authType "token") (or (not .Values.realm.smtp.token.url) (not .Values.realm.smtp.token.clientId) (not .Values.realm.smtp.token.scope)) -}}
+{{- if and (eq $v.realm.smtp.authType "token") (or (not $v.realm.smtp.token.url) (not $v.realm.smtp.token.clientId) (not $v.realm.smtp.token.scope)) -}}
 {{- fail "realm.smtp.token.url, .clientId and .scope are required when realm.smtp.authType is token" -}}
 {{- end -}}
-{{- if and (eq .Values.realm.smtp.authType "token") (ne (.Values.realm.smtp.auth | toString) "true") -}}
+{{- if and (eq $v.realm.smtp.authType "token") (ne ($v.realm.smtp.auth | toString) "true") -}}
 {{- fail "realm.smtp.authType token needs realm.smtp.auth \"true\"" -}}
 {{- end -}}
 {{- end -}}
