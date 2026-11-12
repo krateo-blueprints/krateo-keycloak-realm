@@ -41,6 +41,9 @@ jobs:
           # The authn OIDCConfig: valid against authn-crds' schema (no field pruned), derived from the
           # client and groups, and not rendered where authn's API is absent.
           python3 hack/check-oidcconfig.py
+          # Keycloak stores any event type name and records nothing for an unknown one (0.2.0/0.3.0
+          # shipped two). Every enabled type must be in the pinned Keycloak EventType list.
+          python3 hack/check-event-types.py
 
   lint:
     runs-on: ubuntu-latest

@@ -70,10 +70,17 @@
             "enabled": {
               "type": "boolean"
             },
+            "expiration": {
+              "description": "Seconds Keycloak keeps user and admin events.",
+              "type": "integer",
+              "minimum": 1
+            },
             "types": {
+              "description": "Keycloak EventType names (checked in CI against the pinned list).",
               "type": "array",
               "items": {
-                "type": "string"
+                "type": "string",
+                "pattern": "^[A-Z][A-Z0-9_]*$"
               }
             },
             "listeners": {
@@ -81,6 +88,17 @@
               "items": {
                 "type": "string"
               }
+            }
+          }
+        },
+        "adminEvents": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "includeRepresentation": {
+              "type": "boolean"
             }
           }
         },

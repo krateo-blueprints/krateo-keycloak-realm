@@ -19,7 +19,9 @@ timestamp: 2026-11-11T00:00:00Z
 | `realm.registrationAllowed` | `false` | accounts only through an administrator-approved joiner flow |
 | `realm.resetPasswordAllowed` / `verifyEmail` / `loginWithEmailAllowed` | `true` | |
 | `realm.actionTokenGeneratedByAdminLifespan` | `259200` | set-password link lifetime, seconds (72 h) |
-| `realm.events.{enabled,types,listeners}` | on, `SEND_EXECUTE_ACTIONS`/`SEND_ERROR`, `jboss-logging` | |
+| `realm.events.{enabled,types,listeners}` | on, 23 types (logins, the set-password link, credential/profile/email changes), `jboss-logging` | `types` must be Keycloak EventType names: CI checks them against `hack/testdata/keycloak-26.6.3-event-types.json` |
+| `realm.events.expiration` | `7776000` (90 days) | seconds Keycloak keeps user events, and admin events when they are on |
+| `realm.adminEvents.{enabled,includeRepresentation}` | `true` / `false` | record Admin API changes; `includeRepresentation` would store each change's JSON body (personal data for users) |
 | `realm.smtp.enabled` | `false` | when true, `host` and `from` are required |
 | `realm.smtp.{host,port,from,fromDisplayName,replyTo,auth,starttls,ssl}` | port `"587"`, auth/starttls `"true"`, ssl `"false"` | all strings |
 | `realm.smtp.authType` | `basic` | `basic` or `token` |

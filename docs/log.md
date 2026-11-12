@@ -9,6 +9,21 @@ timestamp: 2026-11-11T00:00:00Z
 
 # Log
 
+## 2026-11-12 — 0.3.1: user and admin events that actually record
+
+Up to 0.3.0 the realm enabled two user event types that are not Keycloak EventTypes
+(`SEND_EXECUTE_ACTIONS`, `SEND_ERROR`). Keycloak stored them, recorded nothing, and answered HTTP 500
+to queries by them, so the realm kept no user events. 0.3.1 enables 23 real types, keeps events for 90
+days (`realm.events.expiration`), and turns admin events on without request bodies
+(`realm.adminEvents`; their retention is the realm attribute `adminEventsExpiration`). CI checks every
+enabled type against `hack/testdata/keycloak-26.6.3-event-types.json`, the `/admin/serverinfo` list of
+Keycloak 26.6.3 (132 types, identical to its `EventType.java`).
+
+Also: `smtpServer.authType` (and the token fields) are rendered only when `realm.smtp.auth` is
+`"true"`. Keycloak drops `authType` when auth is off, so the CR never matched the realm.
+
+Measured on GKE (Keycloak 26.6.3) through the joiner flow; see [usage](usage.md#events).
+
 ## 2026-11-12 — 0.3.0: the realm's user profile
 
 The chart now owns the realm's whole user profile through keycloak-config-kog 0.7.0's

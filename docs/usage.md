@@ -31,6 +31,27 @@ account console, and the account API refuses a value the user sends for it (HTTP
 redeclared built-in fails the render. Changes made to the profile in the admin console are reverted
 by the KOG. Uninstalling, or setting `userProfile.enabled: false`, leaves the realm's profile as it is.
 
+## Events
+
+The realm records user events (sign-ins and failures, the set-password link's credential change,
+profile and email changes) and admin events (what administrators and service accounts change
+through the Admin API), both kept for `realm.events.expiration` (90 days). Admin events store no
+request body (`includeRepresentation: false`).
+
+What Keycloak 26.6.3 records for the joiner flow, measured:
+
+| step | recorded |
+|---|---|
+| the joiner flow creates the user | admin event `CREATE USER` |
+| it sends the set-password email | admin event `ACTION USER users/<id>/execute-actions-email` (a failed send records nothing) |
+| the user opens the link and sets a password | user event `UPDATE_CREDENTIAL` (no `EXECUTE_ACTION_TOKEN`, no `VERIFY_EMAIL`, though the email becomes verified) |
+| the user signs in / mistypes the password | `LOGIN` / `LOGIN_ERROR` (`invalid_user_credentials`) |
+
+`realm.events.types` must be Keycloak EventType names. Keycloak accepts any string there without
+complaint, records nothing for an unknown one, and answers HTTP 500 to an event query by it. Up to
+0.3.0 this chart enabled two names that do not exist (`SEND_EXECUTE_ACTIONS`, `SEND_ERROR`), so it
+recorded no user events at all. CI now checks every enabled type against the pinned list.
+
 ## Mail
 
 Password mode (`realm.smtp.authType: basic`): the Secret holds `username` and `password`.

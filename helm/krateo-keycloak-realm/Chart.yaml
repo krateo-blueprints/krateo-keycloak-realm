@@ -3,8 +3,8 @@ name: krateo-keycloak-realm
 description: >-
   A Keycloak parent realm for a Krateo platform, declared as keycloak-config-kog custom resources:
   realm settings (registration off, set-password and verify-email links by email, events), its
-  groups, and the portal's public PKCE OIDC client with a groups claim. Requires keycloak-config-kog
-  >= 0.6.0 installed and authenticated against the target Keycloak.
+  groups, and the portal's public PKCE OIDC client with a groups claim, and the realm's user profile. Requires keycloak-config-kog
+  >= 0.7.0 installed and authenticated against the target Keycloak.
 type: application
 version: CHART_VERSION
 appVersion: "1.0.0"

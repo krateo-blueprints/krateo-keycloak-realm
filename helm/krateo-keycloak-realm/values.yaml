@@ -36,13 +36,47 @@ realm:
   loginWithEmailAllowed: true
   # Lifetime of administrator-sent action links (the set-password email), in seconds: 72 hours.
   actionTokenGeneratedByAdminLifespan: 259200
+  # User events (logins, the set-password link, profile changes) kept by Keycloak for `expiration`
+  # seconds. `types` must be Keycloak EventType names: CI checks them against the pinned list in
+  # hack/testdata (an unknown name is stored by Keycloak without complaint, records nothing, and
+  # makes event queries by that type fail with HTTP 500).
   events:
     enabled: true
+    # 90 days.
+    expiration: 7776000
     types:
-      - SEND_EXECUTE_ACTIONS
-      - SEND_ERROR
+      - LOGIN
+      - LOGIN_ERROR
+      - LOGOUT
+      - LOGOUT_ERROR
+      - CODE_TO_TOKEN_ERROR
+      # The set-password link sent by an administrator: the user opening it, and its failures.
+      - EXECUTE_ACTIONS
+      - EXECUTE_ACTIONS_ERROR
+      - EXECUTE_ACTION_TOKEN
+      - EXECUTE_ACTION_TOKEN_ERROR
+      - UPDATE_CREDENTIAL
+      - UPDATE_CREDENTIAL_ERROR
+      - VERIFY_EMAIL
+      - VERIFY_EMAIL_ERROR
+      - SEND_VERIFY_EMAIL
+      - SEND_VERIFY_EMAIL_ERROR
+      - SEND_RESET_PASSWORD
+      - SEND_RESET_PASSWORD_ERROR
+      - RESET_PASSWORD
+      - RESET_PASSWORD_ERROR
+      - UPDATE_PROFILE
+      - UPDATE_PROFILE_ERROR
+      - UPDATE_EMAIL
+      - UPDATE_EMAIL_ERROR
     listeners:
       - jboss-logging
+  # Admin events: what administrators and service accounts change through the Admin API (e.g. a
+  # user created by the joiner flow, a set-password email sent). Kept for events.expiration too.
+  adminEvents:
+    enabled: true
+    # Store each change's JSON body too. Off: a user representation carries personal data.
+    includeRepresentation: false
   # Outgoing mail. Off by default: an install without SMTP gets a realm that sends nothing.
   smtp:
     enabled: false
