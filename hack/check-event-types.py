@@ -12,6 +12,10 @@ the `enums.eventType` list from the Admin API's /admin/serverinfo of that Keyclo
 release the keycloak chart ships. Deprecated types are flagged too, so the list keeps current names.
 
 SELF-TEST. A mutant render with an unknown type must fail and a control render must pass.
+
+DUPLICATES. Keycloak keeps types and listeners as sets and the KOG compares them as sets, so a
+duplicate never converges. The chart refuses one at render (kr.check); this gate requires that a
+duplicate in either list fails the render with a message naming the key and the value.
 """
 import json, shutil, subprocess, sys, tempfile
 from pathlib import Path
@@ -21,6 +25,19 @@ CHART = Path("helm/krateo-keycloak-realm")
 PINNED = sorted(Path("hack/testdata").glob("keycloak-*-event-types.json"))
 DEPRECATED = {"UPDATE_PASSWORD", "UPDATE_PASSWORD_ERROR", "UPDATE_TOTP", "UPDATE_TOTP_ERROR",
               "REMOVE_TOTP", "REMOVE_TOTP_ERROR", "VALIDATE_ACCESS_TOKEN", "VALIDATE_ACCESS_TOKEN_ERROR"}
+
+
+def render_raw(extra=()):
+    work = Path(tempfile.mkdtemp(prefix="evtypes-"))
+    try:
+        dst = work / "c"
+        shutil.copytree(CHART, dst)
+        cy = dst / "Chart.yaml"
+        cy.write_text(cy.read_text().replace("CHART_VERSION", "0.0.0-ci"))
+        return subprocess.run(["helm", "template", "r", str(dst), "--set", "parentClient.redirectUris[0]=https://x/auth", *extra],
+                              capture_output=True, text=True)
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
 
 
 def render(extra=()):
@@ -55,6 +72,11 @@ if problems(["LOGIN", "UPDATE_CREDENTIAL"], valid):
     sys.exit("::error::self-test: valid event types failed the check; the gate is broken")
 
 errors, checked = [], 0
+for key, dup in (("types", "LOGIN"), ("listeners", "jboss-logging")):
+    p = render_raw(["--set", f"realm.events.{key}={{{dup},{dup}}}"])
+    want = f'realm.events.{key}: "{dup}" is listed twice'
+    if p.returncode == 0 or want not in p.stderr:
+        errors.append(f"a duplicate in realm.events.{key} must fail the render with `{want}`, got rc={p.returncode}: {p.stderr.strip()[:200]}")
 for extra in [()] + [("-f", str(f)) for f in sorted(Path("examples").glob("*/values.yaml"))]:
     types = render(extra)
     checked += 1

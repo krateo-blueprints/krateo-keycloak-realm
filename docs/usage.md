@@ -52,6 +52,11 @@ complaint, records nothing for an unknown one, and answers HTTP 500 to an event 
 0.3.0 this chart enabled two names that do not exist (`SEND_EXECUTE_ACTIONS`, `SEND_ERROR`), so it
 recorded no user events at all. CI now checks every enabled type against the pinned list.
 
+Each type and listener may appear once. Keycloak keeps both lists as sets and keycloak-config-kog
+compares them as sets, so a duplicate would never match the realm, which would be re-PUT and never
+converge. Since 0.3.2 the chart refuses a duplicate at render, naming it, e.g.
+`realm.events.types: "LOGIN" is listed twice`.
+
 ## Mail
 
 Password mode (`realm.smtp.authType: basic`): the Secret holds `username` and `password`.
