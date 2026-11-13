@@ -91,6 +91,13 @@ authorization code with PKCE S256 only, and redirects to any loopback port. Its 
 in `aud`, which the MCP gateway compares byte-for-byte. Set it per install; it has no default. The
 issuer is the realm's, the same as the portal's, so authn matches the IDE's user to their portal user.
 
+**Known limit in 0.5.0.** The client has two protocol mappers (`groups`, `mcp-audience`). Keycloak
+returns them in its own order and rest-dynamic-controller still compares a list of objects by position,
+so after creating the client correctly its KeycloakClient latches `Ready=False` with
+`DriftNotConverging` (measured in-cluster with oasgen-provider 0.63.1). Sign-in works; the condition is
+wrong. Keyed comparison of object lists is requested from oasgen-provider; enable `ideClient` once a
+release carrying it is installed.
+
 ## Mail
 
 Password mode (`realm.smtp.authType: basic`): the Secret holds `username` and `password`.

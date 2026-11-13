@@ -11,13 +11,17 @@ timestamp: 2026-11-11T00:00:00Z
 
 ## 2026-11-13 — 0.5.0: identity-lifecycle's client and the IDE client
 
-`identityLifecycle.enabled` renders identity-lifecycle's own client for access requests (confidential,
+Proven in-cluster (disposable GKE, keycloak-config-kog 0.8.0, oasgen-provider 0.63.1 with the rdc
+snowplow/authn wiring): the client and its exact role set converge, hand-made drift is reverted, and
+deleting the role mapping removes the roles. `identityLifecycle.enabled` renders identity-lifecycle's own client for access requests (confidential,
 service account only, secret generated once into `identity-lifecycle-idp`/`clientSecret` for it to
 mount) and a `KeycloakServiceAccountRoleMapping` holding its service account to exactly
 `realm-management` `manage-users`, `view-users`, `query-groups` (keycloak-config-kog >= 0.8.0).
 `ideClient.enabled` renders `krateo-ide`, the public PKCE client IDEs sign in with for the MCP endpoint:
 loopback redirects, lightweight access tokens off, bare-name `groups` and `ideClient.audience` (required,
-no default) in the access token. Both are off by default, so existing installs render unchanged. The
+no default) in the access token. Known limit: its two protocol mappers make its KeycloakClient latch
+`DriftNotConverging` until rest-dynamic-controller compares lists of objects by key (requested from
+oasgen-provider); the client itself is correct in Keycloak. Both are off by default, so existing installs render unchanged. The
 client-secret objects moved into a shared helper (`kr.generatedClientSecret`); `clients[]` renders the
 same objects. `hack/check-clients.py`, `check-deletion-policy.py` and `check-configurations-keep.py` now
 render every optional client.
