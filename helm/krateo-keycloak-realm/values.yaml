@@ -188,6 +188,10 @@ identityLifecycle:
 # authorization code + PKCE S256 only, loopback redirects on any port (the IDE picks it). Its access
 # token carries preferred_username, the same `groups` claim as the portal client, and `audience` in
 # `aud`, which the MCP gateway checks.
+# KNOWN LIMIT (0.5.0): the client carries two protocol mappers, which Keycloak returns in its own order,
+# and rest-dynamic-controller still compares lists of objects by position. The client is created
+# correctly, but its KeycloakClient latches Ready=False (DriftNotConverging) until keyed comparison
+# ships in oasgen-provider. Enable it once that release is installed.
 ideClient:
   enabled: false
   clientId: krateo-ide
