@@ -1,0 +1,104 @@
+{{- $v := include "kr.values" . | fromYaml }}
+{{- include "kr.check" . }}
+{{- range $c := $v.clients }}
+{{- $obj := printf "%s-%s" (include "kr.objName" $v.realm.name) (include "kr.objName" $c.clientId) | trunc 63 | trimSuffix "-" }}
+{{- $secret := $c.secret | default dict }}
+{{- $secretName := $secret.name | default (printf "%s-client-secret" (include "kr.objName" $c.clientId)) }}
+{{- $secretKey := $secret.key | default "client-secret" }}
+---
+# The client secret, generated once by External Secrets Operator into {{ $secretName }}. The KOG reads it
+# into the client (clientSecretRef); the relying party (e.g. Keystone) syncs the same Secret into its own
+# namespace. refreshInterval "0" never regenerates it, and `keep` lets it survive an uninstall: a new
+# value is not re-pushed to Keycloak while the client's spec is unchanged, so a regenerated secret would
+# silently diverge from the one the relying party holds.
+apiVersion: generators.external-secrets.io/v1alpha1
+kind: Password
+metadata:
+  name: {{ $obj }}-secret
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "kr.labels" $ | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  length: {{ $secret.length | default 48 }}
+  digits: 10
+  symbols: 0
+  noUpper: false
+  allowRepeat: true
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: {{ $obj }}-secret
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "kr.labels" $ | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  refreshInterval: "0"
+  target:
+    name: {{ $secretName }}
+    creationPolicy: Owner
+    template:
+      data:
+        {{ $secretKey }}: {{ "{{ .password }}" | quote }}
+  dataFrom:
+    - sourceRef:
+        generatorRef:
+          apiVersion: generators.external-secrets.io/v1alpha1
+          kind: Password
+          name: {{ $obj }}-secret
+---
+# A confidential relying party (e.g. Keystone): authorization code flow with its own secret, the same
+# `groups` claim as the portal client, and optional OIDC back-channel logout.
+apiVersion: {{ $v.resourceGroup }}/v1
+kind: KeycloakClient
+metadata:
+  name: {{ $obj }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "kr.labels" $ | nindent 4 }}
+  annotations:
+    {{- include "kr.deletionPolicy" $ | nindent 4 }}
+spec:
+  {{- include "kr.configurationRef" $ | nindent 2 }}
+  realm: {{ $v.realm.name | quote }}
+  clientId: {{ $c.clientId | quote }}
+  name: {{ $c.name | default $c.clientId | quote }}
+  enabled: true
+  protocol: openid-connect
+  publicClient: false
+  standardFlowEnabled: true
+  implicitFlowEnabled: false
+  directAccessGrantsEnabled: false
+  serviceAccountsEnabled: false
+  clientSecretRef:
+    name: {{ $secretName }}
+    key: {{ $secretKey }}
+  redirectUris:
+    {{- toYaml $c.redirectUris | nindent 4 }}
+  {{- with $c.webOrigins }}
+  webOrigins:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- $bl := $c.backchannelLogout | default dict }}
+  attributes:
+    post.logout.redirect.uris: {{ $c.postLogoutRedirectUris | default "+" | quote }}
+    {{- if $bl.url }}
+    backchannel.logout.url: {{ $bl.url | quote }}
+    backchannel.logout.session.required: {{ ternary "true" "false" (ne (toString $bl.sessionRequired) "false") | quote }}
+    {{- end }}
+  protocolMappers:
+    - name: groups
+      protocol: openid-connect
+      protocolMapper: oidc-group-membership-mapper
+      consentRequired: false
+      config:
+        full.path: "false"
+        claim.name: {{ $c.groupsClaim | default "groups" | quote }}
+        id.token.claim: "true"
+        access.token.claim: "true"
+        userinfo.token.claim: "true"
+{{- end }}

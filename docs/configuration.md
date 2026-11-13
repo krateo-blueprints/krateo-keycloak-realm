@@ -33,6 +33,8 @@ timestamp: 2026-11-11T00:00:00Z
 | `parentClient.{enabled,clientId,name,rootUrl}` | `true`, `krateo-portal`, `Krateo portal`, `""` | |
 | `parentClient.redirectUris[]` | `[]` | **required** when enabled |
 | `parentClient.webOrigins[]` / `postLogoutRedirectUris` / `groupsClaim` | `[]` / `"+"` / `groups` | |
+| `clients[]` | `[]` | confidential relying parties (e.g. Keystone): `{clientId, name?, redirectUris (required), webOrigins?, postLogoutRedirectUris?, groupsClaim?, backchannelLogout{url, sessionRequired}?, secret{name, key, length}?}` |
+| `clients[].secret` | name `<clientId>-client-secret`, key `client-secret`, length 48 | the Secret External Secrets Operator generates once for the client |
 | `oidcConfig.enabled` / `name` | `true` / `keycloak` | render authn's OIDCConfig (only where the `oidc.authn.krateo.io/v1alpha1` API exists); `name` is the `?name=` of `/oidc/login` |
 | `oidcConfig.keycloakUrl` | `""` | **required** when enabled: Keycloak's public base URL (the keycloak chart's `keycloak.hostname`); issuer = `<keycloakUrl>/realms/<realm.name>` |
 | `oidcConfig.discoveryUrl` | `""` | where authn reads discovery; empty = `<issuer>/.well-known/openid-configuration` |

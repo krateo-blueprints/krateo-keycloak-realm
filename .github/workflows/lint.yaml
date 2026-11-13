@@ -50,6 +50,9 @@ jobs:
           # `helm upgrade --reuse-values` upgrades with the previous release's values and skips this
           # chart's defaults: 0.3.0-0.3.2 failed it from 0.1.0/0.2.0/0.3.0 with a nil pointer.
           python3 hack/check-reuse-values.py
+          # Confidential clients: one generated secret shared by Keycloak and the relying party,
+          # generated once and kept.
+          python3 hack/check-clients.py
 
   lint:
     runs-on: ubuntu-latest
@@ -70,5 +73,6 @@ jobs:
           set -euo pipefail
           helm lint helm/krateo-keycloak-realm --set 'parentClient.redirectUris[0]=https://cmp.example.com/auth?kind=oidc'
           helm template release helm/krateo-keycloak-realm -f examples/microsoft-365/values.yaml > /dev/null
+          helm template release helm/krateo-keycloak-realm -f examples/openstack-keystone/values.yaml > /dev/null
           helm template release helm/krateo-keycloak-realm --set 'parentClient.redirectUris[0]=https://x/auth' --set global.injected=true > /dev/null
           echo "renders with the example values and with an injected global"

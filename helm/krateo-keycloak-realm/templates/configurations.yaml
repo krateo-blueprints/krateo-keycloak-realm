@@ -1,7 +1,7 @@
 {{- $v := include "kr.values" . | fromYaml }}
 {{- include "kr.check" . }}
 {{- $kinds := list "KeycloakRealmConfiguration" "KeycloakGroupConfiguration" }}
-{{- if $v.parentClient.enabled }}
+{{- if or $v.parentClient.enabled $v.clients }}
 {{- $kinds = append $kinds "KeycloakClientConfiguration" }}
 {{- end }}
 {{- if $v.userProfile.enabled }}

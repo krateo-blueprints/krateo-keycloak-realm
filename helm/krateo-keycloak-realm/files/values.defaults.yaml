@@ -157,6 +157,19 @@ parentClient:
   postLogoutRedirectUris: "+"
   groupsClaim: groups
 
+# Confidential relying parties (e.g. Keystone), one KeycloakClient each: authorization code flow with
+# a client secret, the same `groups` claim as the portal client, and optional OIDC back-channel logout.
+# Each client's secret is generated once by External Secrets Operator into the Secret
+# `<clientId>-client-secret` (key `client-secret`) in the release namespace; the relying party syncs that
+# Secret into its own namespace. Example (Keystone federation):
+#   clients:
+#     - clientId: keystone
+#       redirectUris:
+#         - http://keystone-api.openstack.svc.cluster.local:5000/v3/auth/OS-FEDERATION/identity_providers/keycloak/protocols/openid/websso/redirect
+#       backchannelLogout:
+#         url: http://horizon-int.openstack.svc.cluster.local/auth/backchannel-logout/
+clients: []
+
 # The authn OIDCConfig that puts "sign in with Keycloak" on the portal, derived from the same values
 # as the client above so the two cannot drift: clientID = parentClient.clientId, redirectURI =
 # parentClient.redirectUris[0], allowedGroups = the realm groups. Public client: no secret, so authn

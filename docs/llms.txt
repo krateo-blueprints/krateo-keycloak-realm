@@ -8,3 +8,4 @@ docs/examples.md: index of examples
 docs/release.md: how a release ships
 docs/log.md: history
 examples/microsoft-365/README.md: realm with Microsoft 365 token mail
+examples/openstack-keystone/values.yaml: the openstack realm with a confidential keystone client

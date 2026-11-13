@@ -324,6 +324,74 @@
         }
       }
     },
+    "clients": {
+      "type": "array",
+      "description": "Confidential relying parties (e.g. Keystone), one KeycloakClient each, with a generated client secret.",
+      "items": {
+        "type": "object",
+        "required": [
+          "clientId",
+          "redirectUris"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "clientId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string"
+          },
+          "redirectUris": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          },
+          "webOrigins": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "postLogoutRedirectUris": {
+            "type": "string"
+          },
+          "groupsClaim": {
+            "type": "string"
+          },
+          "backchannelLogout": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "url": {
+                "type": "string"
+              },
+              "sessionRequired": {
+                "type": "boolean"
+              }
+            }
+          },
+          "secret": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "key": {
+                "type": "string"
+              },
+              "length": {
+                "type": "integer",
+                "minimum": 32
+              }
+            }
+          }
+        }
+      }
+    },
     "parentClient": {
       "type": "object",
       "properties": {
