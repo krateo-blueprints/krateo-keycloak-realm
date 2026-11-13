@@ -17,6 +17,11 @@ import yaml
 
 CHART = Path("helm/krateo-keycloak-realm")
 
+# Every optional client switched on, so the new objects are checked too (0.5.0).
+ALL = ["--set", "identityLifecycle.enabled=true", "--set", "ideClient.enabled=true",
+       "--set", "ideClient.audience=https://x/mcp", "--set", "clients[0].clientId=rp",
+       "--set", "clients[0].redirectUris[0]=https://rp/cb"]
+
 
 def render():
     work = Path(tempfile.mkdtemp(prefix="cfgkeep-"))
@@ -25,7 +30,7 @@ def render():
         shutil.copytree(CHART, dst)
         cy = dst / "Chart.yaml"
         cy.write_text(cy.read_text().replace("CHART_VERSION", "0.0.0-ci"))
-        p = subprocess.run(["helm", "template", "r", str(dst), "--set", "parentClient.redirectUris[0]=https://x/auth"],
+        p = subprocess.run(["helm", "template", "r", str(dst), "--set", "parentClient.redirectUris[0]=https://x/auth", *ALL],
                            capture_output=True, text=True)
         if p.returncode != 0:
             sys.exit(f"::error::render failed: {p.stderr.strip()[:500]}")
@@ -43,8 +48,8 @@ def missing(docs):
 docs = render()
 cfgs, bad = missing(docs)
 errors = []
-if len(cfgs) < 3:
-    errors.append(f"expected 3 Configurations (realm, group, client), rendered {len(cfgs)}")
+if len(cfgs) < 5:
+    errors.append(f"expected 5 Configurations (realm, group, client, user profile, service-account role mapping), rendered {len(cfgs)}")
 errors += [f"{k} lacks helm.sh/resource-policy: keep (uninstall would deadlock the CRs' finalizers)" for k in bad]
 mutant = [dict(d, metadata={k: v for k, v in d["metadata"].items() if k != "annotations"}) for d in docs]
 if not missing(mutant)[1]:

@@ -71,6 +71,26 @@ unchanged. Requires External Secrets Operator (already a keycloak-config-kog pre
 [examples/openstack-keystone](../examples/openstack-keystone/values.yaml) is the realm Keystone uses,
 with back-channel logout to Horizon.
 
+## identity-lifecycle's client
+
+`identityLifecycle.enabled: true` renders the client identity-lifecycle authenticates with for access
+requests: confidential, service account only (no browser flow, no password grant), its secret generated
+once into `identity-lifecycle-idp` (key `clientSecret`) for identity-lifecycle to mount. A
+`KeycloakServiceAccountRoleMapping` keeps its service account holding **exactly** `realm-management`
+`manage-users`, `view-users` and `query-groups`: a role added by hand is removed. Needs
+keycloak-config-kog >= 0.8.0, whose delegated kinds need Snowplow and authn wired into the
+rest-dynamic-controller deployment.
+
+## The IDE client (MCP)
+
+`ideClient.enabled: true` renders `krateo-ide`, the client IDEs such as Claude Code and Cursor sign in
+with when they reach the platform's MCP endpoint (`claude mcp add --transport http <name>
+https://<portal host>/mcp --client-id krateo-ide --callback-port <port>`). It is public (no secret),
+authorization code with PKCE S256 only, and redirects to any loopback port. Its access token carries
+`preferred_username`, the same bare-name `groups` claim as the portal client, and `ideClient.audience`
+in `aud`, which the MCP gateway compares byte-for-byte. Set it per install; it has no default. The
+issuer is the realm's, the same as the portal's, so authn matches the IDE's user to their portal user.
+
 ## Mail
 
 Password mode (`realm.smtp.authType: basic`): the Secret holds `username` and `password`.

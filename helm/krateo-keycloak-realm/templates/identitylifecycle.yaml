@@ -1,0 +1,54 @@
+{{- $v := include "kr.values" . | fromYaml }}
+{{- include "kr.check" . }}
+{{- $il := $v.identityLifecycle }}
+{{- if $il.enabled }}
+{{- $obj := printf "%s-%s" (include "kr.objName" $v.realm.name) (include "kr.objName" $il.clientId) | trunc 63 | trimSuffix "-" }}
+{{- $secret := $il.secret | default dict }}
+{{ include "kr.generatedClientSecret" (dict "obj" $obj "name" $secret.name "key" $secret.key "length" $secret.length "root" $) }}
+---
+# identity-lifecycle's own client: confidential, service account only (no browser flow, no password
+# grant). The controller authenticates with client_credentials using the Secret above, which it mounts.
+apiVersion: {{ $v.resourceGroup }}/v1
+kind: KeycloakClient
+metadata:
+  name: {{ $obj }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kr.labels" . | nindent 4 }}
+  annotations:
+    {{- include "kr.deletionPolicy" . | nindent 4 }}
+spec:
+  {{- include "kr.configurationRef" . | nindent 2 }}
+  realm: {{ $v.realm.name | quote }}
+  clientId: {{ $il.clientId | quote }}
+  name: {{ $il.name | default $il.clientId | quote }}
+  enabled: true
+  protocol: openid-connect
+  publicClient: false
+  standardFlowEnabled: false
+  implicitFlowEnabled: false
+  directAccessGrantsEnabled: false
+  serviceAccountsEnabled: true
+  clientSecretRef:
+    name: {{ $secret.name }}
+    key: {{ $secret.key }}
+---
+# Exactly these roles of {{ $il.roleClientId }} on the client's service account: a role added by hand is
+# removed, and deleting this CR removes them all (keycloak-config-kog >= 0.8.0).
+apiVersion: {{ $v.resourceGroup }}/v1
+kind: KeycloakServiceAccountRoleMapping
+metadata:
+  name: {{ $obj }}-roles
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kr.labels" . | nindent 4 }}
+  annotations:
+    {{- include "kr.deletionPolicy" . | nindent 4 }}
+spec:
+  {{- include "kr.configurationRef" . | nindent 2 }}
+  realm: {{ $v.realm.name | quote }}
+  clientId: {{ $il.clientId | quote }}
+  roleClientId: {{ $il.roleClientId | quote }}
+  roles:
+    {{- toYaml $il.roles | nindent 4 }}
+{{- end }}

@@ -1,0 +1,59 @@
+{{- $v := include "kr.values" . | fromYaml }}
+{{- include "kr.check" . }}
+{{- $ide := $v.ideClient }}
+{{- if $ide.enabled }}
+{{- $obj := printf "%s-%s" (include "kr.objName" $v.realm.name) (include "kr.objName" $ide.clientId) | trunc 63 | trimSuffix "-" }}
+---
+# The client IDEs (Claude Code, Cursor) sign in with when they reach the platform's MCP endpoint: a
+# public native client (no secret), authorization code + PKCE S256 only, redirecting to a loopback port
+# the IDE opens (RFC 8252 7.3). Its ACCESS token is what the MCP gateway checks and authn exchanges, so
+# the claims live there: preferred_username (default `profile` scope), `groups` exactly as the portal
+# client emits them, and the MCP resource in `aud` (RFC 8707). Lightweight access tokens would drop
+# those claims, so they are off. No hostname override: the issuer stays the realm's, as for the portal.
+apiVersion: {{ $v.resourceGroup }}/v1
+kind: KeycloakClient
+metadata:
+  name: {{ $obj }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kr.labels" . | nindent 4 }}
+  annotations:
+    {{- include "kr.deletionPolicy" . | nindent 4 }}
+spec:
+  {{- include "kr.configurationRef" . | nindent 2 }}
+  realm: {{ $v.realm.name | quote }}
+  clientId: {{ $ide.clientId | quote }}
+  name: {{ $ide.name | default $ide.clientId | quote }}
+  enabled: true
+  protocol: openid-connect
+  publicClient: true
+  standardFlowEnabled: true
+  implicitFlowEnabled: false
+  directAccessGrantsEnabled: false
+  serviceAccountsEnabled: false
+  redirectUris:
+    {{- toYaml $ide.redirectUris | nindent 4 }}
+  attributes:
+    pkce.code.challenge.method: S256
+    client.use.lightweight.access.token.enabled: "false"
+  protocolMappers:
+    - name: groups
+      protocol: openid-connect
+      protocolMapper: oidc-group-membership-mapper
+      consentRequired: false
+      config:
+        full.path: "false"
+        claim.name: {{ $ide.groupsClaim | default "groups" | quote }}
+        id.token.claim: "true"
+        access.token.claim: "true"
+        userinfo.token.claim: "true"
+    - name: mcp-audience
+      protocol: openid-connect
+      protocolMapper: oidc-audience-mapper
+      consentRequired: false
+      config:
+        included.custom.audience: {{ $ide.audience | quote }}
+        access.token.claim: "true"
+        id.token.claim: "false"
+        introspection.token.claim: "true"
+{{- end }}

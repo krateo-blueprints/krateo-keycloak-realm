@@ -5,51 +5,7 @@
 {{- $secret := $c.secret | default dict }}
 {{- $secretName := $secret.name | default (printf "%s-client-secret" (include "kr.objName" $c.clientId)) }}
 {{- $secretKey := $secret.key | default "client-secret" }}
----
-# The client secret, generated once by External Secrets Operator into {{ $secretName }}. The KOG reads it
-# into the client (clientSecretRef); the relying party (e.g. Keystone) syncs the same Secret into its own
-# namespace. refreshInterval "0" never regenerates it, and `keep` lets it survive an uninstall: a new
-# value is not re-pushed to Keycloak while the client's spec is unchanged, so a regenerated secret would
-# silently diverge from the one the relying party holds.
-apiVersion: generators.external-secrets.io/v1alpha1
-kind: Password
-metadata:
-  name: {{ $obj }}-secret
-  namespace: {{ $.Release.Namespace }}
-  labels:
-    {{- include "kr.labels" $ | nindent 4 }}
-  annotations:
-    helm.sh/resource-policy: keep
-spec:
-  length: {{ $secret.length | default 48 }}
-  digits: 10
-  symbols: 0
-  noUpper: false
-  allowRepeat: true
----
-apiVersion: external-secrets.io/v1
-kind: ExternalSecret
-metadata:
-  name: {{ $obj }}-secret
-  namespace: {{ $.Release.Namespace }}
-  labels:
-    {{- include "kr.labels" $ | nindent 4 }}
-  annotations:
-    helm.sh/resource-policy: keep
-spec:
-  refreshInterval: "0"
-  target:
-    name: {{ $secretName }}
-    creationPolicy: Owner
-    template:
-      data:
-        {{ $secretKey }}: {{ "{{ .password }}" | quote }}
-  dataFrom:
-    - sourceRef:
-        generatorRef:
-          apiVersion: generators.external-secrets.io/v1alpha1
-          kind: Password
-          name: {{ $obj }}-secret
+{{ include "kr.generatedClientSecret" (dict "obj" $obj "name" $secretName "key" $secretKey "length" $secret.length "root" $) }}
 ---
 # A confidential relying party (e.g. Keystone): authorization code flow with its own secret, the same
 # `groups` claim as the portal client, and optional OIDC back-channel logout.

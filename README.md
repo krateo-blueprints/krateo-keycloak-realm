@@ -10,7 +10,8 @@ controllers reconcile them against Keycloak and heal changes made in the Keycloa
 
 ## Install
 
-Requires keycloak-config-kog >= 0.6.0 installed and authenticated against the target Keycloak.
+Requires keycloak-config-kog >= 0.6.0 installed and authenticated against the target Keycloak
+(>= 0.8.0 with `identityLifecycle.enabled`).
 Install in the KOG's namespace:
 
 ```console
