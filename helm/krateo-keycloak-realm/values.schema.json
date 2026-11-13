@@ -475,7 +475,7 @@
         "audience": {
           "type": "string",
           "title": "MCP audience",
-          "description": "REQUIRED when enabled, no default: the MCP resource the gateway expects in the access token's aud, byte-for-byte, e.g. https://cmp.example.com/mcp (https, lowercase host, path /mcp, no trailing slash).",
+          "description": "The MCP resource the gateway expects in the access token's aud, byte-for-byte, e.g. https://cmp.example.com/mcp (https, lowercase host, path /mcp, no trailing slash). Empty by default, meaning unset: the chart refuses to render when ideClient.enabled is true and this is empty, so it can never ship pointing at someone else's host.",
           "default": ""
         },
         "redirectUris": {

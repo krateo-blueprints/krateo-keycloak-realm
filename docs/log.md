@@ -9,6 +9,13 @@ timestamp: 2026-11-11T00:00:00Z
 
 # Log
 
+## 2026-11-13 — 0.5.1: `ideClient.audience` described consistently
+
+0.5.0 described `ideClient.audience` as "no default" while its schema (correctly) carries `default: ""`,
+so a consumer reading both had to choose which to believe (reported by the installer). It is empty by
+default, meaning unset, and the render refuses an empty value when `ideClient.enabled`; the schema,
+values comments and configuration docs now say exactly that. No rendered object changes.
+
 ## 2026-11-13 — 0.5.0: identity-lifecycle's client and the IDE client
 
 Proven in-cluster (disposable GKE, keycloak-config-kog 0.8.0, oasgen-provider 0.63.1 with the rdc
