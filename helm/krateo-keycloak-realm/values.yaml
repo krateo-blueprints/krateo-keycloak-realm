@@ -196,8 +196,8 @@ ideClient:
   enabled: false
   clientId: krateo-ide
   name: Krateo IDE (MCP)
-  # REQUIRED when enabled: the MCP resource the gateway expects in the access token's `aud`, e.g.
-  # https://cmp.example.com/mcp
+  # Empty by default (unset); REQUIRED when enabled: the chart refuses to render without it. The MCP
+  # resource the gateway expects in the access token's `aud`, e.g. https://cmp.example.com/mcp
   audience: ""
   redirectUris:
     - http://localhost:*
