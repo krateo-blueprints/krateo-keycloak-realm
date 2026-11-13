@@ -8,6 +8,11 @@ import yaml
 
 CHART = Path("helm/krateo-keycloak-realm")
 
+# Every optional client switched on, so the new objects are checked too (0.5.0).
+ALL = ["--set", "identityLifecycle.enabled=true", "--set", "ideClient.enabled=true",
+       "--set", "ideClient.audience=https://x/mcp", "--set", "clients[0].clientId=rp",
+       "--set", "clients[0].redirectUris[0]=https://rp/cb"]
+
 
 def render(extra=()):
     work = Path(tempfile.mkdtemp(prefix="delpol-"))
@@ -31,10 +36,10 @@ def bad(docs):
                  if (d["metadata"].get("annotations") or {}).get("krateo.io/deletion-policy") != "orphan"]
 
 
-res, b = bad(render())
+res, b = bad(render(ALL))
 errors = [f"{x} is not krateo.io/deletion-policy: orphan by default" for x in b]
-if len(res) < 4:
-    errors.append(f"expected >= 4 Keycloak resources (realm, 2 groups, client), rendered {len(res)}")
+if len(res) < 8:
+    errors.append(f"expected >= 8 Keycloak resources (realm, 2 groups, user profile, portal + rp + identity-lifecycle + IDE clients, role mapping), rendered {len(res)}")
 if not bad(render(["--set", "deletionPolicy=delete"]))[1]:
     errors.append("self-test: deletionPolicy=delete was NOT detected")
 print(f"Checked {len(res)} Keycloak resource(s) for krateo.io/deletion-policy: orphan by default.")

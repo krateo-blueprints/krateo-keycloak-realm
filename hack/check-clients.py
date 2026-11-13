@@ -73,4 +73,59 @@ for e in errs:
     print(f"::error::{e}")
 if errs:
     sys.exit(1)
-print("Checked confidential clients: shared generated secret, generate-once + keep, Configuration, back-channel logout.")
+
+# --- identity-lifecycle's client (0.5.0): confidential + service account only, generated secret, and a
+# role mapping naming exactly the configured roles, with its Configuration.
+IL = ["--set", "identityLifecycle.enabled=true"]
+docs = render(IL)
+il = [d for d in docs if d["kind"] == "KeycloakClient" and d["spec"]["clientId"] == "identity-lifecycle"]
+errs = problems([d for d in docs if d["kind"] != "KeycloakClient"] + il)
+if len(il) != 1:
+    errs.append(f"identityLifecycle.enabled renders {len(il)} identity-lifecycle clients, want 1")
+else:
+    s = il[0]["spec"]
+    want = {"serviceAccountsEnabled": True, "standardFlowEnabled": False, "directAccessGrantsEnabled": False,
+            "implicitFlowEnabled": False}
+    errs += [f"identity-lifecycle: {k} must be {v}" for k, v in want.items() if s.get(k) is not v]
+    if s.get("clientSecretRef") != {"name": "identity-lifecycle-idp", "key": "clientSecret"}:
+        errs.append(f"identity-lifecycle: clientSecretRef {s.get('clientSecretRef')} is not identity-lifecycle-idp/clientSecret")
+m = [d for d in docs if d["kind"] == "KeycloakServiceAccountRoleMapping"]
+if len(m) != 1 or m[0]["spec"].get("clientId") != "identity-lifecycle" or m[0]["spec"].get("roleClientId") != "realm-management" \
+        or sorted(m[0]["spec"].get("roles", [])) != ["manage-users", "query-groups", "view-users"]:
+    errs.append(f"identity-lifecycle role mapping is not exactly realm-management manage-users/view-users/query-groups: {[x['spec'] for x in m]}")
+if not [d for d in docs if d["kind"] == "KeycloakServiceAccountRoleMappingConfiguration"]:
+    errs.append("no KeycloakServiceAccountRoleMappingConfiguration rendered with identityLifecycle.enabled")
+
+# --- the IDE client (0.5.0): public + PKCE S256 + code flow only, loopback redirects, lightweight access
+# tokens off, groups and the audience in the ACCESS token; refuses to render without an audience.
+docs = render(["--set", "ideClient.enabled=true", "--set", "ideClient.audience=https://cmp.example.com/mcp"])
+ide = [d["spec"] for d in docs if d["kind"] == "KeycloakClient" and d["spec"]["clientId"] == "krateo-ide"]
+if len(ide) != 1:
+    errs.append(f"ideClient.enabled renders {len(ide)} krateo-ide clients, want 1")
+else:
+    s = ide[0]; a = s.get("attributes", {}); mp = {x["protocolMapper"]: x["config"] for x in s.get("protocolMappers", [])}
+    if not (s.get("publicClient") is True and s.get("standardFlowEnabled") is True and s.get("implicitFlowEnabled") is False
+            and s.get("directAccessGrantsEnabled") is False and s.get("serviceAccountsEnabled") is False):
+        errs.append("krateo-ide: must be public with the authorization code flow only")
+    if a.get("pkce.code.challenge.method") != "S256" or a.get("client.use.lightweight.access.token.enabled") != "false":
+        errs.append(f"krateo-ide: needs PKCE S256 and lightweight access tokens off: {a}")
+    if sorted(s.get("redirectUris", [])) != ["http://127.0.0.1:*", "http://localhost:*"]:
+        errs.append(f"krateo-ide: redirects must be loopback only: {s.get('redirectUris')}")
+    g = mp.get("oidc-group-membership-mapper", {})
+    if g.get("full.path") != "false" or g.get("access.token.claim") != "true" or g.get("claim.name") != "groups":
+        errs.append(f"krateo-ide: groups must be bare names in the access token: {g}")
+    au = mp.get("oidc-audience-mapper", {})
+    if au.get("included.custom.audience") != "https://cmp.example.com/mcp" or au.get("access.token.claim") != "true":
+        errs.append(f"krateo-ide: the audience must be the configured value, in the access token: {au}")
+work = Path(tempfile.mkdtemp(prefix="clients-")); dst = work / "c"; shutil.copytree(CHART, dst)
+(dst / "Chart.yaml").write_text((dst / "Chart.yaml").read_text().replace("CHART_VERSION", "0.0.0-ci"))
+p = subprocess.run(["helm", "template", "r", str(dst), "-f", EXAMPLE, "--set", "ideClient.enabled=true"], capture_output=True, text=True)
+shutil.rmtree(work, ignore_errors=True)
+if p.returncode == 0 or "ideClient.audience is required" not in p.stderr:
+    errs.append("ideClient.enabled without an audience must refuse to render")
+for e in errs:
+    print(f"::error::{e}")
+if errs:
+    sys.exit(1)
+print("Checked confidential clients: shared generated secret, generate-once + keep, Configuration, back-channel logout; "
+      "identity-lifecycle (service account only, exact role mapping) and krateo-ide (public PKCE, loopback, audience).")

@@ -9,6 +9,19 @@ timestamp: 2026-11-11T00:00:00Z
 
 # Log
 
+## 2026-11-13 — 0.5.0: identity-lifecycle's client and the IDE client
+
+`identityLifecycle.enabled` renders identity-lifecycle's own client for access requests (confidential,
+service account only, secret generated once into `identity-lifecycle-idp`/`clientSecret` for it to
+mount) and a `KeycloakServiceAccountRoleMapping` holding its service account to exactly
+`realm-management` `manage-users`, `view-users`, `query-groups` (keycloak-config-kog >= 0.8.0).
+`ideClient.enabled` renders `krateo-ide`, the public PKCE client IDEs sign in with for the MCP endpoint:
+loopback redirects, lightweight access tokens off, bare-name `groups` and `ideClient.audience` (required,
+no default) in the access token. Both are off by default, so existing installs render unchanged. The
+client-secret objects moved into a shared helper (`kr.generatedClientSecret`); `clients[]` renders the
+same objects. `hack/check-clients.py`, `check-deletion-policy.py` and `check-configurations-keep.py` now
+render every optional client.
+
 ## 2026-11-13 — 0.4.0: confidential clients for relying parties
 
 `clients[]` renders confidential KeycloakClients for other services (first user: Keystone federation in

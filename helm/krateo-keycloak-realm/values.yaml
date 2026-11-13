@@ -167,6 +167,39 @@ parentClient:
 #         url: http://horizon-int.openstack.svc.cluster.local/auth/backchannel-logout/
 clients: []
 
+# identity-lifecycle's own client (access requests): confidential, service account only, its secret
+# generated once into the Secret `secret.name` (key `secret.key`) in the release namespace, which
+# identity-lifecycle mounts (accessRequest.keycloak.clientSecretRef). Its service account holds EXACTLY
+# `roles` of `roleClientId` (a role added by hand is removed). Needs keycloak-config-kog >= 0.8.0
+# (KeycloakServiceAccountRoleMapping).
+identityLifecycle:
+  enabled: false
+  clientId: identity-lifecycle
+  secret:
+    name: identity-lifecycle-idp
+    key: clientSecret
+  roleClientId: realm-management
+  roles:
+    - manage-users
+    - view-users
+    - query-groups
+
+# The client IDEs (Claude Code, Cursor) sign in with to reach the platform's MCP endpoint: public,
+# authorization code + PKCE S256 only, loopback redirects on any port (the IDE picks it). Its access
+# token carries preferred_username, the same `groups` claim as the portal client, and `audience` in
+# `aud`, which the MCP gateway checks.
+ideClient:
+  enabled: false
+  clientId: krateo-ide
+  name: Krateo IDE (MCP)
+  # REQUIRED when enabled: the MCP resource the gateway expects in the access token's `aud`, e.g.
+  # https://cmp.example.com/mcp
+  audience: ""
+  redirectUris:
+    - http://localhost:*
+    - http://127.0.0.1:*
+  groupsClaim: groups
+
 # The authn OIDCConfig that puts "sign in with Keycloak" on the portal, derived from the same values
 # as the client above so the two cannot drift: clientID = parentClient.clientId, redirectURI =
 # parentClient.redirectUris[0], allowedGroups = the realm groups. Public client: no secret, so authn

@@ -392,6 +392,112 @@
         }
       }
     },
+    "identityLifecycle": {
+      "type": "object",
+      "title": "identity-lifecycle client",
+      "description": "identity-lifecycle's own client for access requests: confidential, service account only, secret generated once into a Secret it mounts, and its service account holding exactly `roles` of `roleClientId` (keycloak-config-kog >= 0.8.0).",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Enabled",
+          "description": "Render the client, its secret and the role mapping.",
+          "default": false
+        },
+        "clientId": {
+          "type": "string",
+          "title": "Client ID",
+          "description": "The client's clientId (identity-lifecycle's accessRequest.keycloak.clientId).",
+          "default": "identity-lifecycle"
+        },
+        "secret": {
+          "type": "object",
+          "title": "Client secret",
+          "description": "The Secret the client secret is generated into, in the release namespace (identity-lifecycle's accessRequest.keycloak.clientSecretRef).",
+          "properties": {
+            "name": {
+              "type": "string",
+              "title": "Secret name",
+              "description": "Name of the generated Secret.",
+              "default": "identity-lifecycle-idp"
+            },
+            "key": {
+              "type": "string",
+              "title": "Secret key",
+              "description": "Key of the client secret in it.",
+              "default": "clientSecret"
+            }
+          }
+        },
+        "roleClientId": {
+          "type": "string",
+          "title": "Role client",
+          "description": "clientId of the client that owns the roles.",
+          "default": "realm-management"
+        },
+        "roles": {
+          "type": "array",
+          "title": "Roles",
+          "description": "Exactly the roles of roleClientId the service account holds; a role added by hand is removed.",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "manage-users",
+            "view-users",
+            "query-groups"
+          ]
+        }
+      }
+    },
+    "ideClient": {
+      "type": "object",
+      "title": "IDE client",
+      "description": "The public client IDEs (Claude Code, Cursor) sign in with to reach the platform's MCP endpoint: authorization code + PKCE S256, loopback redirects, preferred_username, the portal's groups claim, and `audience` in the access token's aud.",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Enabled",
+          "description": "Render the IDE client.",
+          "default": false
+        },
+        "clientId": {
+          "type": "string",
+          "title": "Client ID",
+          "description": "The IDE's --client-id and the MCP gateway's clientId.",
+          "default": "krateo-ide"
+        },
+        "name": {
+          "type": "string",
+          "title": "Display name",
+          "description": "Shown on the consent and login pages.",
+          "default": "Krateo IDE (MCP)"
+        },
+        "audience": {
+          "type": "string",
+          "title": "MCP audience",
+          "description": "REQUIRED when enabled, no default: the MCP resource the gateway expects in the access token's aud, byte-for-byte, e.g. https://cmp.example.com/mcp (https, lowercase host, path /mcp, no trailing slash).",
+          "default": ""
+        },
+        "redirectUris": {
+          "type": "array",
+          "title": "Redirect URIs",
+          "description": "Loopback redirects; the IDE opens the port (RFC 8252 7.3).",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "http://localhost:*",
+            "http://127.0.0.1:*"
+          ]
+        },
+        "groupsClaim": {
+          "type": "string",
+          "title": "Groups claim",
+          "description": "Token claim carrying bare group names, as for the portal client.",
+          "default": "groups"
+        }
+      }
+    },
     "parentClient": {
       "type": "object",
       "properties": {

@@ -1,8 +1,11 @@
 {{- $v := include "kr.values" . | fromYaml }}
 {{- include "kr.check" . }}
 {{- $kinds := list "KeycloakRealmConfiguration" "KeycloakGroupConfiguration" }}
-{{- if or $v.parentClient.enabled $v.clients }}
+{{- if or $v.parentClient.enabled $v.clients $v.identityLifecycle.enabled $v.ideClient.enabled }}
 {{- $kinds = append $kinds "KeycloakClientConfiguration" }}
+{{- end }}
+{{- if $v.identityLifecycle.enabled }}
+{{- $kinds = append $kinds "KeycloakServiceAccountRoleMappingConfiguration" }}
 {{- end }}
 {{- if $v.userProfile.enabled }}
 {{- $kinds = append $kinds "KeycloakUserProfileConfiguration" }}

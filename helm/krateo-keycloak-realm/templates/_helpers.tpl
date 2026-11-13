@@ -63,6 +63,40 @@ in values.schema.json, which crdgen would turn into a CRD-level constraint on ex
 {{- fail (printf "clients[%s].redirectUris is required: the relying party's exact redirect URI (e.g. Keystone's OIDCRedirectURI)" .clientId) -}}
 {{- end -}}
 {{- end -}}
+{{- range $name, $c := dict "identityLifecycle" $v.identityLifecycle "ideClient" $v.ideClient -}}
+{{- if $c.enabled -}}
+{{- if not $c.clientId -}}
+{{- fail (printf "%s.clientId is required when %s.enabled" $name $name) -}}
+{{- end -}}
+{{- if hasKey $ids $c.clientId -}}
+{{- fail (printf "%s.clientId %q is already used by another client of this chart" $name $c.clientId) -}}
+{{- end -}}
+{{- $_ := set $ids $c.clientId true -}}
+{{- end -}}
+{{- end -}}
+{{- if $v.identityLifecycle.enabled -}}
+{{- if or (not $v.identityLifecycle.secret.name) (not $v.identityLifecycle.secret.key) -}}
+{{- fail "identityLifecycle.secret.name and .key are required when identityLifecycle.enabled (the Secret identity-lifecycle mounts)" -}}
+{{- end -}}
+{{- if or (not $v.identityLifecycle.roleClientId) (not $v.identityLifecycle.roles) -}}
+{{- fail "identityLifecycle.roleClientId and .roles are required when identityLifecycle.enabled" -}}
+{{- end -}}
+{{- $seen := dict -}}
+{{- range $v.identityLifecycle.roles -}}
+{{- if hasKey $seen (toString .) -}}
+{{- fail (printf "identityLifecycle.roles: %q is listed twice (compared as a set; remove the duplicate)" (toString .)) -}}
+{{- end -}}
+{{- $_ := set $seen (toString .) true -}}
+{{- end -}}
+{{- end -}}
+{{- if $v.ideClient.enabled -}}
+{{- if not $v.ideClient.audience -}}
+{{- fail "ideClient.audience is required when ideClient.enabled: the MCP resource the gateway expects in the access token's aud (e.g. https://cmp.example.com/mcp)" -}}
+{{- end -}}
+{{- if not $v.ideClient.redirectUris -}}
+{{- fail "ideClient.redirectUris is required when ideClient.enabled (e.g. http://localhost:* and http://127.0.0.1:*)" -}}
+{{- end -}}
+{{- end -}}
 {{- range $v.groups -}}
 {{- if or (hasPrefix "/" .name) (hasPrefix "system:" .name) (hasPrefix "krateo:" .name) -}}
 {{- fail (printf "group %q: a group name must not start with \"/\" (a group path), \"system:\" (reserved for Kubernetes) or \"krateo:\" (reserved for authn, e.g. krateo:loa:2)" .name) -}}
@@ -94,4 +128,55 @@ in values.schema.json, which crdgen would turn into a CRD-level constraint on ex
 {{- fail "realm.smtp.authType token needs realm.smtp.auth \"true\"" -}}
 {{- end -}}
 {{- end -}}
+{{- end -}}
+
+{{- /* A confidential client's secret, generated ONCE by External Secrets Operator into a Secret.
+Args: obj (object-name prefix), name/key (target Secret), length, root (the top context). */ -}}
+{{- define "kr.generatedClientSecret" -}}
+---
+# The client secret, generated once by External Secrets Operator into {{ .name }}. The KOG reads it
+# into the client (clientSecretRef); the client's owner reads the same Secret (a relying party such as
+# Keystone syncs it into its own namespace; identity-lifecycle mounts it). refreshInterval "0" never
+# regenerates it, and `keep` lets it survive an uninstall: a new value is not re-pushed to Keycloak
+# while the client's spec is unchanged, so a regenerated secret would silently diverge from the one
+# the client's owner holds.
+apiVersion: generators.external-secrets.io/v1alpha1
+kind: Password
+metadata:
+  name: {{ .obj }}-secret
+  namespace: {{ .root.Release.Namespace }}
+  labels:
+    {{- include "kr.labels" .root | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  length: {{ .length | default 48 }}
+  digits: 10
+  symbols: 0
+  noUpper: false
+  allowRepeat: true
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: {{ .obj }}-secret
+  namespace: {{ .root.Release.Namespace }}
+  labels:
+    {{- include "kr.labels" .root | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  refreshInterval: "0"
+  target:
+    name: {{ .name }}
+    creationPolicy: Owner
+    template:
+      data:
+        {{ .key }}: {{ "{{ .password }}" | quote }}
+  dataFrom:
+    - sourceRef:
+        generatorRef:
+          apiVersion: generators.external-secrets.io/v1alpha1
+          kind: Password
+          name: {{ .obj }}-secret
 {{- end -}}
