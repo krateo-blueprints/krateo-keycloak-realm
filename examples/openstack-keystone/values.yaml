@@ -1,0 +1,16 @@
+# The `openstack` realm that Keystone federates with (the OpenStack blueprint's S2 verification):
+# Keycloak in-cluster, no portal, one confidential client for Keystone with back-channel logout to Horizon.
+realm:
+  name: openstack
+  displayName: OpenStack
+groups:
+  - name: tenants
+parentClient:
+  enabled: false
+clients:
+  - clientId: keystone
+    name: Keystone
+    redirectUris:
+      - http://keystone-api.openstack.svc.cluster.local:5000/v3/auth/OS-FEDERATION/identity_providers/keycloak/protocols/openid/websso/redirect
+    backchannelLogout:
+      url: http://horizon-int.openstack.svc.cluster.local/auth/backchannel-logout/

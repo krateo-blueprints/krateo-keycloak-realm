@@ -57,6 +57,20 @@ compares them as sets, so a duplicate would never match the realm, which would b
 converge. Since 0.3.2 the chart refuses a duplicate at render, naming it, e.g.
 `realm.events.types: "LOGIN" is listed twice`.
 
+## Confidential clients (relying parties)
+
+`clients[]` declares confidential OIDC clients for other services, such as Keystone federating with
+the realm. Each one becomes a KeycloakClient (authorization code flow, the same bare-name `groups`
+claim as the portal client, optional back-channel logout) whose secret External Secrets Operator
+generates once into the Secret `<clientId>-client-secret` (key `client-secret`) in the release
+namespace. The relying party syncs that one Secret into its own namespace, for example with an ESO
+`ExternalSecret` on the Kubernetes provider, so Keycloak and the relying party always hold the same
+value. The generated Secret is never regenerated (`refreshInterval: "0"`) and survives an uninstall
+(`helm.sh/resource-policy: keep`): a new value would not reach Keycloak while the client's spec is
+unchanged. Requires External Secrets Operator (already a keycloak-config-kog prerequisite).
+[examples/openstack-keystone](../examples/openstack-keystone/values.yaml) is the realm Keystone uses,
+with back-channel logout to Horizon.
+
 ## Mail
 
 Password mode (`realm.smtp.authType: basic`): the Secret holds `username` and `password`.

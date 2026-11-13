@@ -49,6 +49,20 @@ in values.schema.json, which crdgen would turn into a CRD-level constraint on ex
 {{- $_ := set $seen (toString .) true -}}
 {{- end -}}
 {{- end -}}
+{{- $ids := dict -}}
+{{- if $v.parentClient.enabled -}}{{- $_ := set $ids $v.parentClient.clientId true -}}{{- end -}}
+{{- range $v.clients -}}
+{{- if not .clientId -}}
+{{- fail "clients: every client needs a clientId" -}}
+{{- end -}}
+{{- if hasKey $ids .clientId -}}
+{{- fail (printf "clients: clientId %q is declared twice (or equals parentClient.clientId)" .clientId) -}}
+{{- end -}}
+{{- $_ := set $ids .clientId true -}}
+{{- if not .redirectUris -}}
+{{- fail (printf "clients[%s].redirectUris is required: the relying party's exact redirect URI (e.g. Keystone's OIDCRedirectURI)" .clientId) -}}
+{{- end -}}
+{{- end -}}
 {{- range $v.groups -}}
 {{- if or (hasPrefix "/" .name) (hasPrefix "system:" .name) (hasPrefix "krateo:" .name) -}}
 {{- fail (printf "group %q: a group name must not start with \"/\" (a group path), \"system:\" (reserved for Kubernetes) or \"krateo:\" (reserved for authn, e.g. krateo:loa:2)" .name) -}}

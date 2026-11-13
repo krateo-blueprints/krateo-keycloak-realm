@@ -9,6 +9,16 @@ timestamp: 2026-11-11T00:00:00Z
 
 # Log
 
+## 2026-11-13 — 0.4.0: confidential clients for relying parties
+
+`clients[]` renders confidential KeycloakClients for other services (first user: Keystone federation in
+the OpenStack blueprint's S2 verification). Each client's secret is generated once by External Secrets
+Operator (a `Password` generator and an `ExternalSecret`, both kept on uninstall) into
+`<clientId>-client-secret`, which the client reads through `clientSecretRef` and the relying party
+syncs into its own namespace. Optional OIDC back-channel logout (`backchannel.logout.url`, session
+required by default). The client Configuration is rendered when only `clients` are declared. CI gate
+`hack/check-clients.py`. New key `clients` (default `[]`), so existing installs render unchanged.
+
 ## 2026-11-12 — 0.3.3: upgrades with `helm upgrade --reuse-values` work
 
 `helm upgrade --reuse-values` to 0.3.0, 0.3.1 or 0.3.2 failed from an older release with a nil pointer
