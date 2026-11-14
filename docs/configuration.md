@@ -31,7 +31,7 @@ timestamp: 2026-11-11T00:00:00Z
 | `userProfile.enabled` | `true` | render the realm's whole user profile (needs keycloak-config-kog >= 0.7.0): Keycloak's default `username`, `email`, `firstName`, `lastName` verbatim, then `attributes` |
 | `userProfile.attributes[]` | `krateo-access-request-uid` (admin view/edit only, length <= 36) | Keycloak attribute shape: `name`, `displayName`, `group`, `multivalued`, `validations`, `annotations`, `required`, `permissions{view,edit}`, `selector`; a built-in name is refused |
 | `parentClient.{enabled,clientId,name,rootUrl}` | `true`, `krateo-portal`, `Krateo portal`, `""` | |
-| `parentClient.redirectUris[]` | `[]` | **required** when enabled |
+| `parentClient.redirectUris[]` | `[]` | **required** when enabled: the **portal frontend's** OIDC callback page, not an authn URL (authn never receives the browser redirect; the frontend passes it the code). Rendered into both the client's `redirectUris` and the OIDCConfig's `redirectURI`. With path-based exposure it must not fall under another component's prefix: if authn is routed at `/auth`, a callback under `/auth` reaches authn and sign-in fails. |
 | `parentClient.webOrigins[]` / `postLogoutRedirectUris` / `groupsClaim` | `[]` / `"+"` / `groups` | |
 | `clients[]` | `[]` | confidential relying parties (e.g. Keystone): `{clientId, name?, redirectUris (required), webOrigins?, postLogoutRedirectUris?, groupsClaim?, backchannelLogout{url, sessionRequired}?, secret{name, key, length}?}` |
 | `clients[].secret` | name `<clientId>-client-secret`, key `client-secret`, length 48 | the Secret External Secrets Operator generates once for the client |

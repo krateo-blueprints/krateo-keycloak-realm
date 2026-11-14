@@ -148,7 +148,11 @@ parentClient:
   clientId: krateo-portal
   name: Krateo portal
   rootUrl: ""
-  # REQUIRED when enabled, e.g. https://cmp.example.com/auth?kind=oidc
+  # REQUIRED when enabled: the PORTAL FRONTEND's OIDC callback page (it receives Keycloak's redirect and
+  # hands the code to authn), not an authn URL; authn never receives the browser redirect. E.g. with
+  # host-based exposure https://cmp.example.com/auth?kind=oidc. With path-based exposure (several
+  # components on one host) it must not fall under another component's path prefix: if authn is routed
+  # at /auth, a callback at /auth lands on authn and sign-in fails. Single-sourced into the OIDCConfig.
   redirectUris: []
   webOrigins: []
   postLogoutRedirectUris: "+"

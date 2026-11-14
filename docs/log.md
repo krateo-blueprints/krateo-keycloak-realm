@@ -9,6 +9,15 @@ timestamp: 2026-11-11T00:00:00Z
 
 # Log
 
+## 2026-11-14 — `parentClient.redirectUris` is the frontend's callback (docs)
+
+Found while planning a path-mode install (krateo-057): the portal client's redirect URI is the portal
+**frontend's** OIDC callback page, which hands the code to authn; authn never receives the browser
+redirect. With host-based exposure `https://<portal host>/auth?kind=oidc` reaches the frontend (authn
+has its own host). With path-based exposure authn is routed at `/auth` on the same host, so that URL
+reaches authn instead and sign-in fails after a successful Keycloak login. Values comments, schema text
+and configuration docs now say so. No rendered object changes.
+
 ## 2026-11-13 — 0.5.1: `ideClient.audience` described consistently
 
 0.5.0 described `ideClient.audience` as "no default" while its schema (correctly) carries `default: ""`,
