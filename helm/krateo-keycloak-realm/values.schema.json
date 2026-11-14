@@ -519,7 +519,8 @@
           "items": {
             "type": "string",
             "minLength": 1
-          }
+          },
+          "description": "Required when enabled: the portal frontend's OIDC callback page (not an authn URL), e.g. https://cmp.example.com/auth?kind=oidc with host-based exposure. With path-based exposure it must not fall under another component's path prefix (e.g. authn's /auth)."
         },
         "webOrigins": {
           "type": "array",
