@@ -452,7 +452,7 @@
     "ideClient": {
       "type": "object",
       "title": "IDE client",
-      "description": "The public client IDEs (Claude Code, Cursor) sign in with to reach the platform's MCP endpoint: authorization code + PKCE S256, loopback redirects, preferred_username, the portal's groups claim, and `audience` in the access token's aud.",
+      "description": "The public client IDEs (Claude Code, Cursor) sign in with to reach the platform's MCP endpoint: authorization code + PKCE S256, loopback redirects, preferred_username, the portal's groups claim, and `audience` in the access token's aud (keycloak-config-kog >= 0.9.1 with oasgen-provider >= 0.67.0).",
       "properties": {
         "enabled": {
           "type": "boolean",

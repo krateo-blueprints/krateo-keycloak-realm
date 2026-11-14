@@ -9,6 +9,23 @@ timestamp: 2026-11-11T00:00:00Z
 
 # Log
 
+## 2026-11-14 — 0.5.2: `ideClient` converges; never oasgen-provider 0.66.0
+
+`ideClient` no longer carries a known limit. keycloak-config-kog 0.9.0 declares a client's protocol
+mappers a list keyed by name, and oasgen-provider matches them by key, so the order Keycloak returns
+`krateo-ide`'s two mappers in is no longer drift. Its requirement is stated where the key is described
+(values, schema, configuration, README): keycloak-config-kog >= 0.9.1 with oasgen-provider >= 0.67.0.
+The chart-wide minimum stays oasgen-provider >= 0.62.0 for everything else, now excluding 0.66.0
+(`>= 0.62.0, != 0.66.0`): on 0.66.0, since retracted, the KeycloakUserProfile this chart always renders
+never turned Ready on a fresh install, because it is created together with its realm and a profile whose
+realm is not there yet at its first observe looped until its controller restarted (oasgen-provider #674,
+fixed in 0.67.0). Proven on a disposable GKE cluster with keycloak-config-kog 0.9.0, oasgen-provider 0.67.0
+and Keycloak 26.6.3: this chart installed fresh on a realm that did not exist yet, with `ideClient` and
+the portal client, hit that race (the profile's first observe in the same second as the realm's create)
+and every object was Ready within 7 minutes; `krateo-ide` took no update in the following 10 minutes,
+with the userprofile controller not restarted. Comments, docs and the annotation only; no rendered
+object changes.
+
 ## 2026-11-14 — `parentClient.redirectUris` is the frontend's callback (docs)
 
 Found while planning a path-mode install (krateo-057): the portal client's redirect URI is the portal

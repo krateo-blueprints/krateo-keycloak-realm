@@ -11,7 +11,8 @@ controllers reconcile them against Keycloak and heal changes made in the Keycloa
 ## Install
 
 Requires keycloak-config-kog >= 0.6.0 installed and authenticated against the target Keycloak
-(>= 0.8.0 with `identityLifecycle.enabled`).
+(>= 0.8.0 with `identityLifecycle.enabled`; >= 0.9.1 with oasgen-provider >= 0.67.0 with
+`ideClient.enabled`; never oasgen-provider 0.66.0).
 Install in the KOG's namespace:
 
 ```console
