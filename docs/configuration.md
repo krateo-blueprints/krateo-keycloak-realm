@@ -38,7 +38,7 @@ timestamp: 2026-11-11T00:00:00Z
 | `identityLifecycle.enabled` | `false` | identity-lifecycle's own client: confidential, service account only, plus a KeycloakServiceAccountRoleMapping (needs keycloak-config-kog >= 0.8.0) |
 | `identityLifecycle.{clientId,secret.name,secret.key}` | `identity-lifecycle`, `identity-lifecycle-idp`, `clientSecret` | the client and the generated Secret identity-lifecycle mounts (`accessRequest.keycloak.clientSecretRef`) |
 | `identityLifecycle.{roleClientId,roles[]}` | `realm-management`, `manage-users`/`view-users`/`query-groups` | exactly the roles its service account holds; a duplicate is refused |
-| `ideClient.enabled` / `clientId` / `name` | `false` / `krateo-ide` / `Krateo IDE (MCP)` | the public client IDEs sign in with for the MCP endpoint |
+| `ideClient.enabled` / `clientId` / `name` | `false` / `krateo-ide` / `Krateo IDE (MCP)` | the public client IDEs sign in with for the MCP endpoint (needs keycloak-config-kog >= 0.9.1 with oasgen-provider >= 0.67.0, which match its two protocol mappers by name) |
 | `ideClient.audience` | `""` (unset) | **required** when enabled (the render refuses an empty value): the MCP resource the gateway expects in the access token's `aud`, byte-for-byte (`https://<portal host>/mcp`, no trailing slash) |
 | `ideClient.redirectUris[]` / `groupsClaim` | `http://localhost:*`, `http://127.0.0.1:*` / `groups` | loopback only (the IDE picks the port) |
 | `oidcConfig.enabled` / `name` | `true` / `keycloak` | render authn's OIDCConfig (only where the `oidc.authn.krateo.io/v1alpha1` API exists); `name` is the `?name=` of `/oidc/login` |

@@ -24,5 +24,8 @@ annotations:
   # Minimum versions, as numbers: 0.3.1 enables 23 event types, which Keycloak returns in its own order;
   # keycloak-config-kog 0.7.1 declares them a set and oasgen-provider 0.62.0 compares sets unordered.
   # On older releases the realm is re-PUT a few times and then latches Ready=False.
+  # Never oasgen-provider 0.66.0 (retracted): the KeycloakUserProfile this chart always renders is created
+  # together with its realm, and on 0.66.0 a profile whose realm is not there yet at its first observe
+  # never turns Ready (oasgen-provider #674, fixed in 0.67.0). ideClient needs more: see values.yaml.
   krateo.io/requires-keycloak-config-kog: ">= 0.7.1"
-  krateo.io/requires-oasgen-provider: ">= 0.62.0"
+  krateo.io/requires-oasgen-provider: ">= 0.62.0, != 0.66.0"
