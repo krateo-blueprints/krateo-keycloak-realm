@@ -26,10 +26,12 @@ Keycloak 26.6.3, an existing realm upgraded from 0.5.2 / KOG 0.9.1):
 - switched off: one PUT, values back to `false` / `0` / `0`, checkbox gone;
 - against keycloak-config-kog 0.9.1's CRD the stored CR keeps `rememberMe` but **loses both timeouts**
   and stays Ready: the API server prunes undeclared fields silently. Hence the pair pin.
-- Upgrading to 0.5.3 with the defaults causes **one realm PUT** although the observe reports the realm up
-  to date: rest-dynamic-controller applies once when the CR's spec changes, and 0.5.3 adds three rendered
-  fields. That PUT replaces the realm `attributes` map with the chart's (oasgen-provider #400), so realm
-  attributes set by hand are lost on this upgrade; Keycloak's own default keys revert to their defaults.
+- Upgrading to 0.5.3 with the defaults causes **one realm PUT**, after an Observe reported drift. The
+  drifting field is not yet identified (under investigation with oasgen-provider): Keycloak's realm GET
+  returns `rememberMe: false` and both timeouts as `0`, equal to what 0.5.3 renders, and default logging
+  does not show the drifting Observe. That PUT replaces the realm `attributes` map with the chart's
+  (oasgen-provider #400), so realm attributes set by hand are lost on this upgrade; Keycloak's own default
+  keys revert to their defaults.
 
 ## 2026-11-14 — 0.5.2: `ideClient` converges; never oasgen-provider 0.66.0
 
