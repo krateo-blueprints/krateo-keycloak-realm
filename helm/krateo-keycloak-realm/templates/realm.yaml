@@ -22,6 +22,10 @@ spec:
   verifyEmail: {{ $r.verifyEmail }}
   loginWithEmailAllowed: {{ $r.loginWithEmailAllowed }}
   actionTokenGeneratedByAdminLifespan: {{ int $r.actionTokenGeneratedByAdminLifespan }}
+  {{- /* Always rendered (defaults equal Keycloak's), so turning Remember me off again really turns it off. */}}
+  rememberMe: {{ $r.rememberMe | default false }}
+  ssoSessionIdleTimeoutRememberMe: {{ int (($r.rememberMeSessions | default dict).idleTimeout | default 0) }}
+  ssoSessionMaxLifespanRememberMe: {{ int (($r.rememberMeSessions | default dict).maxLifespan | default 0) }}
   eventsEnabled: {{ $r.events.enabled }}
   {{- with $r.events.types }}
   enabledEventTypes:
