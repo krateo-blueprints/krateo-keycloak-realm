@@ -19,6 +19,8 @@ timestamp: 2026-11-11T00:00:00Z
 | `realm.registrationAllowed` | `false` | accounts only through an administrator-approved joiner flow |
 | `realm.resetPasswordAllowed` / `verifyEmail` / `loginWithEmailAllowed` | `true` | |
 | `realm.actionTokenGeneratedByAdminLifespan` | `259200` | set-password link lifetime, seconds (72 h) |
+| `realm.rememberMe` | `false` | the Remember me checkbox on the sign-in page. A ticked session gets a persistent identity cookie and `rememberMeSessions`' timeouts; unticked sessions are unchanged |
+| `realm.rememberMeSessions.idleTimeout` / `maxLifespan` | `0` / `0` | SSO idle / max lifespan (seconds) of a Remember me session; `0` = the realm's ordinary SSO timeouts. Needs keycloak-config-kog >= 0.9.2, whose CRD declares them (an older one prunes them silently) |
 | `realm.events.{enabled,types,listeners}` | on, 23 types (logins, the set-password link, credential/profile/email changes), `jboss-logging` | `types` must be Keycloak EventType names: CI checks them against `hack/testdata/keycloak-26.6.3-event-types.json` |
 | `realm.events.expiration` | `7776000` (90 days) | seconds Keycloak keeps user events, and admin events when they are on |
 | `realm.adminEvents.{enabled,includeRepresentation}` | `true` / `false` | record Admin API changes; `includeRepresentation` would store each change's JSON body (personal data for users) |

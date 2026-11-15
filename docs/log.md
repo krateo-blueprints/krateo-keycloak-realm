@@ -9,6 +9,28 @@ timestamp: 2026-11-11T00:00:00Z
 
 # Log
 
+## 2026-11-15 — 0.5.3: Remember me (`realm.rememberMe`, `realm.rememberMeSessions`)
+
+Opt-in values for Keycloak's Remember me: the checkbox on the sign-in page and the SSO idle / max timeouts of
+a ticked session. Unticked sessions keep the realm's ordinary timeouts and a browser-session cookie. They are
+**always rendered**, with Keycloak's own defaults (`false`, `0`, `0`), so a realm that does not set them
+renders what Keycloak already holds, and turning Remember me off again really turns it off. Requested for
+the demo film (a sign-in done off camera must survive a headless recording and a ~40-minute act).
+
+Requires keycloak-config-kog >= 0.9.2 (annotation raised from `>= 0.7.1`), which declares the two timeouts,
+and so oasgen-provider >= 0.67.0. Measured on a disposable GKE cluster (oasgen-provider 0.71.0,
+Keycloak 26.6.3, an existing realm upgraded from 0.5.2 / KOG 0.9.1):
+- switched on (true, 28800, 36000): exactly one realm PUT; Keycloak holds the values, the ordinary SSO
+  timeouts stay 1800 / 36000; no further PUT over two resyncs; the sign-in page shows the checkbox
+  (positive control: the username field on the same page);
+- switched off: one PUT, values back to `false` / `0` / `0`, checkbox gone;
+- against keycloak-config-kog 0.9.1's CRD the stored CR keeps `rememberMe` but **loses both timeouts**
+  and stays Ready: the API server prunes undeclared fields silently. Hence the pair pin.
+- Upgrading to 0.5.3 with the defaults causes **one realm PUT** although the observe reports the realm up
+  to date: rest-dynamic-controller applies once when the CR's spec changes, and 0.5.3 adds three rendered
+  fields. That PUT replaces the realm `attributes` map with the chart's (oasgen-provider #400), so realm
+  attributes set by hand are lost on this upgrade; Keycloak's own default keys revert to their defaults.
+
 ## 2026-11-14 — 0.5.2: `ideClient` converges; never oasgen-provider 0.66.0
 
 `ideClient` no longer carries a known limit. keycloak-config-kog 0.9.0 declares a client's protocol

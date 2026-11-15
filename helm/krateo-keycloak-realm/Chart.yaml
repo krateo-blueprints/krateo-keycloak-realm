@@ -27,5 +27,8 @@ annotations:
   # Never oasgen-provider 0.66.0 (retracted): the KeycloakUserProfile this chart always renders is created
   # together with its realm, and on 0.66.0 a profile whose realm is not there yet at its first observe
   # never turns Ready (oasgen-provider #674, fixed in 0.67.0). ideClient needs more: see values.yaml.
-  krateo.io/requires-keycloak-config-kog: ">= 0.7.1"
-  krateo.io/requires-oasgen-provider: ">= 0.62.0, != 0.66.0"
+  # keycloak-config-kog >= 0.9.2 since 0.5.3: this chart always renders the two Remember me timeouts, and an
+  # older KOG's CRD prunes them silently (measured: the CR keeps rememberMe, loses the timeouts, and stays
+  # Ready), so the realm and the KOG move as a pair. KOG 0.9.x itself needs oasgen-provider >= 0.67.0.
+  krateo.io/requires-keycloak-config-kog: ">= 0.9.2"
+  krateo.io/requires-oasgen-provider: ">= 0.67.0"
