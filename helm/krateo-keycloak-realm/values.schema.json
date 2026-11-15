@@ -64,6 +64,24 @@
           "type": "integer",
           "minimum": 60
         },
+        "rememberMe": {
+          "description": "Show \"Remember me\" on the sign-in page. A ticked session gets a persistent cookie and rememberMeSessions' timeouts; unticked sessions are unchanged. Default false (Keycloak's default).",
+          "type": "boolean"
+        },
+        "rememberMeSessions": {
+          "description": "SSO timeouts (seconds) for sessions signed in with Remember me ticked. 0 = use the realm's ordinary SSO timeouts.",
+          "type": "object",
+          "properties": {
+            "idleTimeout": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "maxLifespan": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
         "events": {
           "type": "object",
           "properties": {

@@ -39,6 +39,14 @@ realm:
   loginWithEmailAllowed: true
   # Lifetime of administrator-sent action links (the set-password email), in seconds: 72 hours.
   actionTokenGeneratedByAdminLifespan: 259200
+  # "Remember me" on the sign-in page. Unticked sessions keep the realm's SSO idle/max timeouts and
+  # a browser-session cookie; a ticked session gets a persistent cookie and the two timeouts below
+  # (seconds; 0 = use the realm's ordinary SSO timeouts). The defaults are Keycloak's own (off, 0, 0),
+  # so a realm that does not set them renders exactly what Keycloak already holds.
+  rememberMe: false
+  rememberMeSessions:
+    idleTimeout: 0
+    maxLifespan: 0
   # User events (logins, the set-password link, profile changes) kept by Keycloak for `expiration`
   # seconds. `types` must be Keycloak EventType names: CI checks them against the pinned list in
   # hack/testdata (an unknown name is stored by Keycloak without complaint, records nothing, and
