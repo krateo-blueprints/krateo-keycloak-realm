@@ -91,12 +91,31 @@ authorization code with PKCE S256 only, and redirects to any loopback port. Its 
 in `aud`, which the MCP gateway compares byte-for-byte. Set it per install; it has no default. The
 issuer is the realm's, the same as the portal's, so authn matches the IDE's user to their portal user.
 
-**Known limit in 0.5.0.** The client has two protocol mappers (`groups`, `mcp-audience`). Keycloak
-returns them in its own order and rest-dynamic-controller still compares a list of objects by position,
-so after creating the client correctly its KeycloakClient latches `Ready=False` with
-`DriftNotConverging` (measured in-cluster with oasgen-provider 0.63.1). Sign-in works; the condition is
-wrong. Keyed comparison of object lists is requested from oasgen-provider; enable `ideClient` once a
-release carrying it is installed.
+**Known limit in 0.5.0, gone on current oasgen-provider.** The client has two protocol mappers
+(`groups`, `mcp-audience`). Keycloak returns them in its own order, and rest-dynamic-controller up to
+oasgen-provider 0.63.1 compared a list of objects by position, so after creating the client correctly
+its KeycloakClient latched `Ready=False` with `DriftNotConverging`. Sign-in worked; the condition was
+wrong. With oasgen-provider 0.74.0 both `krateo-krateo-ide` and `krateo-krateo-portal` reach
+`Available` (measured 2026-11-16 through the installer, krateo-keycloak-realm 0.5.3, Keycloak 26).
+
+## Changing the spec replaces Keycloak's attribute maps
+
+Keycloak fills some maps with server-side defaults the chart does not declare, and the KOG's update
+sends each such map **whole**. So the first update after any change to a CR's spec (an upgrade that
+changes the rendered spec, or a values change) deletes the keys the CR does not express. Measured on
+2026-11-16 (oasgen-provider 0.74.0 names them in a `UnmodelledKeysWouldBeRemoved` Warning on a
+resync, before any update has happened):
+
+| object | map | keys Keycloak holds that the chart does not declare |
+|---|---|---|
+| `KeycloakRealm krateo` | `attributes` | `cibaAuthRequestedUserHint`, `cibaBackchannelTokenDeliveryMode`, `cibaExpiresIn`, `cibaInterval`, `oauth2DeviceCodeLifespan`, `oauth2DevicePollingInterval`, `parRequestUriLifespan`, `realmReusableOtpCode` |
+| `KeycloakClient krateo-krateo-portal`, `krateo-krateo-ide` | `attributes` | `backchannel.logout.revoke.offline.tokens`, `backchannel.logout.session.required`, `realm_client` |
+
+The warning fires only on a resync and compares one level deep, so its silence on other objects is
+not evidence that nothing would be removed. The chart deliberately does not copy Keycloak's defaults
+into the CRs: Keycloak adds defaults between releases, and a copied list would silently miss the new
+ones. The fix is keycloak-config-kog declaring these maps as partial fields (merged with what
+Keycloak holds), which needs oasgen-provider >= 0.76.0. Until that release, keep spec changes rare.
 
 ## Mail
 
