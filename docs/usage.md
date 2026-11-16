@@ -98,24 +98,27 @@ its KeycloakClient latched `Ready=False` with `DriftNotConverging`. Sign-in work
 wrong. With oasgen-provider 0.74.0 both `krateo-krateo-ide` and `krateo-krateo-portal` reach
 `Available` (measured 2026-11-16 through the installer, krateo-keycloak-realm 0.5.3, Keycloak 26).
 
-## Changing the spec replaces Keycloak's attribute maps
+## Changing the spec can delete keys from the realm's attributes
 
-Keycloak fills some maps with server-side defaults the chart does not declare, and the KOG's update
-sends each such map **whole**. So the first update after any change to a CR's spec (an upgrade that
-changes the rendered spec, or a values change) deletes the keys the CR does not express. Measured on
-2026-11-16 (oasgen-provider 0.74.0 names them in a `UnmodelledKeysWouldBeRemoved` Warning on a
-resync, before any update has happened):
+Keycloak fills some maps with server-side keys the chart does not declare, and the KOG's update sends
+each map **whole**. What that does depends on the object, so it was measured rather than assumed
+(2026-11-16, oasgen-provider 0.74.0: a free-form probe key seeded through the Admin API, then a spec
+change through the installer, Keycloak read before and after):
 
-| object | map | keys Keycloak holds that the chart does not declare |
+| object | map | on a spec-change update |
 |---|---|---|
-| `KeycloakRealm krateo` | `attributes` | `cibaAuthRequestedUserHint`, `cibaBackchannelTokenDeliveryMode`, `cibaExpiresIn`, `cibaInterval`, `oauth2DeviceCodeLifespan`, `oauth2DevicePollingInterval`, `parRequestUriLifespan`, `realmReusableOtpCode` |
-| `KeycloakClient krateo-krateo-portal`, `krateo-krateo-ide` | `attributes` | `backchannel.logout.revoke.offline.tokens`, `backchannel.logout.session.required`, `realm_client` |
+| `KeycloakRealm krateo` | `attributes` | **keys are deleted**: the probe key and `realmReusableOtpCode` were gone. Seven defaults (`ciba*`, `oauth2DeviceCodeLifespan`, `oauth2DevicePollingInterval`, `parRequestUriLifespan`) came back, because Keycloak regenerates them, so a check that watched only those would pass for the wrong reason |
+| `KeycloakClient krateo-krateo-portal`, `krateo-krateo-ide` | `attributes` | **nothing is deleted**: Keycloak's client update keeps keys the request omits (the probe and `backchannel.logout.*`, `realm_client` all survived a real update) |
 
-The warning fires only on a resync and compares one level deep, so its silence on other objects is
-not evidence that nothing would be removed. The chart deliberately does not copy Keycloak's defaults
-into the CRs: Keycloak adds defaults between releases, and a copied list would silently miss the new
-ones. The fix is keycloak-config-kog declaring these maps as partial fields (merged with what
-Keycloak holds), which needs oasgen-provider >= 0.76.0. Until that release, keep spec changes rare.
+oasgen-provider 0.74.0's `UnmodelledKeysWouldBeRemoved` Warning names keys for both kinds; for clients
+it is a false positive, since the warning cannot tell a vendor that replaces a map from one that merges
+it. It fires only on a resync and compares one level deep, so its silence is not evidence either.
+
+So anything set on the realm's `attributes` outside the chart (by hand or by another tool) is lost on
+the next spec change. The chart deliberately does not copy Keycloak's defaults into the CR: Keycloak
+adds defaults between releases, and a copied list would silently miss the new ones. The fix is
+keycloak-config-kog declaring these maps as partial fields (merged with what Keycloak holds), which
+needs oasgen-provider >= 0.77.0. Until that release, keep spec changes rare.
 
 ## Mail
 
