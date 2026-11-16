@@ -29,7 +29,7 @@ timestamp: 2026-11-11T00:00:00Z
 | `realm.smtp.authType` | `basic` | `basic` or `token` |
 | `realm.smtp.token.{url,clientId,scope}` | scope `https://outlook.office365.com/.default` | required in token mode |
 | `realm.smtp.credentialsSecret.{name,userKey,passwordKey,clientSecretKey}` | `keycloak-smtp`, `username`, `password`, `clientSecret` | |
-| `groups[]` | `tenants`, `platform-admins` | `{name, attributes?}`; names must not start with `/`, `system:` or `krateo:` |
+| `groups[]` | `tenants`, `platform-admins` | `{name, attributes?}`; names must not start with `/`, `system:` or `krateo:`. `attributes` maps each key to a list of strings (`{pf: ["a"]}`) and needs keycloak-config-kog >= 0.10.0: an older KeycloakGroup CRD types each value as a string and refuses the group (measured), and from 0.10.0 keys Keycloak already holds are kept on update |
 | `userProfile.enabled` | `true` | render the realm's whole user profile (needs keycloak-config-kog >= 0.7.0): Keycloak's default `username`, `email`, `firstName`, `lastName` verbatim, then `attributes` |
 | `userProfile.attributes[]` | `krateo-access-request-uid` (admin view/edit only, length <= 36) | Keycloak attribute shape: `name`, `displayName`, `group`, `multivalued`, `validations`, `annotations`, `required`, `permissions{view,edit}`, `selector`; a built-in name is refused |
 | `parentClient.{enabled,clientId,name,rootUrl}` | `true`, `krateo-portal`, `Krateo portal`, `""` | |
