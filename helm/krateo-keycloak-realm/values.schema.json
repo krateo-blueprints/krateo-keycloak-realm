@@ -611,6 +611,44 @@
           }
         }
       }
+    },
+    "users": {
+      "type": "array",
+      "description": "Realm users this chart owns. No credentials: a user sets the first password via \"Forgot password?\".",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "username"
+        ],
+        "properties": {
+          "username": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "pattern": "^[A-Za-z0-9._@-]+$"
+          },
+          "firstName": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "lastName": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 255,
+            "pattern": "^[^@\\s]+@[^@\\s]+$"
+          },
+          "emailVerified": {
+            "type": "boolean"
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        }
+      }
     }
   }
 }

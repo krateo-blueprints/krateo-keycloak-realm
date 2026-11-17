@@ -74,6 +74,14 @@ in values.schema.json, which crdgen would turn into a CRD-level constraint on ex
 {{- $_ := set $ids $c.clientId true -}}
 {{- end -}}
 {{- end -}}
+{{- $users := dict -}}
+{{- range $v.users -}}
+{{- $k := lower .username -}}
+{{- if hasKey $users $k -}}
+{{- fail (printf "users: username %q is declared twice (Keycloak usernames are case-insensitive)" .username) -}}
+{{- end -}}
+{{- $_ := set $users $k true -}}
+{{- end -}}
 {{- if $v.identityLifecycle.enabled -}}
 {{- if or (not $v.identityLifecycle.secret.name) (not $v.identityLifecycle.secret.key) -}}
 {{- fail "identityLifecycle.secret.name and .key are required when identityLifecycle.enabled (the Secret identity-lifecycle mounts)" -}}

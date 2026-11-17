@@ -1,6 +1,6 @@
 {{- $v := include "kr.values" . | fromYaml }}
 {{- include "kr.check" . }}
-{{- $kinds := list "KeycloakRealmConfiguration" "KeycloakGroupConfiguration" }}
+{{- $kinds := list "KeycloakRealmConfiguration" "KeycloakGroupConfiguration" "KeycloakUserConfiguration" }}
 {{- if or $v.parentClient.enabled $v.clients $v.identityLifecycle.enabled $v.ideClient.enabled }}
 {{- $kinds = append $kinds "KeycloakClientConfiguration" }}
 {{- end }}

@@ -39,6 +39,9 @@ jobs:
           # helm uninstall deletes everything at once; the Configurations must outlive the resources
           # whose finalizers authenticate through them.
           python3 hack/check-configurations-keep.py
+          # users[] (demo's personas): keep + a deletion policy on every KeycloakUser, never credentials,
+          # and the chart default renders none.
+          python3 hack/check-users.py
           # Deleting the realm resource must never delete the realm (and every user) by default.
           python3 hack/check-deletion-policy.py
           # The authn OIDCConfig: valid against authn-crds' schema (no field pruned), derived from the

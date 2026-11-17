@@ -1,0 +1,36 @@
+{{- $v := include "kr.values" . | fromYaml }}
+{{- include "kr.check" . }}
+{{- /* Realm users this chart owns (users[]). No credentials are ever rendered: a user sets the first
+     password with the login page's "Forgot password?" (realm.resetPasswordAllowed + realm.smtp).
+     helm.sh/resource-policy keep: an uninstall or a feature-off must not delete the CR, and the
+     chart's deletionPolicy (default orphan) means deleting the CR would not delete the person either. */}}
+{{- range $v.users }}
+---
+apiVersion: {{ $v.resourceGroup }}/v1
+kind: KeycloakUser
+metadata:
+  name: {{ printf "%s-%s" (include "kr.objName" $v.realm.name) (include "kr.objName" .username) | trunc 63 | trimSuffix "-" }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "kr.labels" $ | nindent 4 }}
+  annotations:
+    {{- include "kr.deletionPolicy" $ | nindent 4 }}
+    helm.sh/resource-policy: keep
+spec:
+  {{- include "kr.configurationRef" $ | nindent 2 }}
+  realm: {{ $v.realm.name | quote }}
+  username: {{ .username | quote }}
+  enabled: {{ if hasKey . "enabled" }}{{ .enabled }}{{ else }}true{{ end }}
+  {{- with .firstName }}
+  firstName: {{ . | quote }}
+  {{- end }}
+  {{- with .lastName }}
+  lastName: {{ . | quote }}
+  {{- end }}
+  {{- with .email }}
+  email: {{ . | quote }}
+  {{- end }}
+  {{- if hasKey . "emailVerified" }}
+  emailVerified: {{ .emailVerified }}
+  {{- end }}
+{{- end }}
