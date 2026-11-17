@@ -1,0 +1,30 @@
+# Published versions of this repo's chart that must not be pinned.
+#
+# A tag cannot be withdrawn: it stays in the registry and looks like any other release. This list is
+# how a release is marked bad WHERE A PINNING SESSION WILL SEE IT -- installer's CI reads it (once this
+# repo is listed in installer's .github/retraction-sources.yaml) and refuses a pin on a listed version.
+#
+# `charts` names the CHART, as in the `chart:` field of installer's component-pins.yaml. This repo
+# publishes exactly one chart, and its component name is the same:
+#
+#     krateo-keycloak-realm
+#
+# THE RULE FOR ADDING AN ENTRY: retract what is ACTIVELY HARMFUL, not what is merely superseded. A
+# version a consumer legitimately holds today stays available; the list must not become a way to push
+# upgrades. And `use:` MUST ALREADY BE PUBLISHED when the entry lands.
+retracted:
+  - version: 0.6.0
+    charts: [krateo-keycloak-realm]
+    use: 0.6.1
+    reason: >-
+      users[] names each KeycloakUser object <realm>-<username> (e.g. krateo-ada) with no way to choose
+      the name. On a cluster that already holds hand-made KeycloakUser CRs under other object names --
+      demo's personas are persona-ada/-bob/-acme/-globex for usernames ada/bob/acme/globex, measured
+      read-only by acmp on 2026-11-17 -- setting users[] creates a SECOND CR per Keycloak user next to
+      the hand-made one, SILENTLY. The hand-made CRs carry the default deletion policy (delete), so a
+      later clean-up of the "old" CRs deletes the Keycloak users themselves, tenant owners included.
+      0.6.0's closed schema also refuses users[].name, so it cannot express the in-place adoption at
+      all. Harmless on a fresh cluster, but the failure where it matters is silent, which is what makes
+      it actively harmful rather than superseded. 0.6.1 adds users[].name (the object name, used
+      verbatim) so {name: persona-ada, username: ada} adopts the existing CR in place. Nothing pins
+      0.6.0 today (installer main pins 0.5.3).
