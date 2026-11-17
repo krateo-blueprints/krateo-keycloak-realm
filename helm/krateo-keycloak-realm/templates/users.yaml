@@ -9,7 +9,9 @@
 apiVersion: {{ $v.resourceGroup }}/v1
 kind: KeycloakUser
 metadata:
-  name: {{ printf "%s-%s" (include "kr.objName" $v.realm.name) (include "kr.objName" .username) | trunc 63 | trimSuffix "-" }}
+  {{- /* `name` adopts an existing KeycloakUser in place (e.g. demo's hand-made persona-ada for username
+       ada); without it the object is named <realm>-<username>. */}}
+  name: {{ .name | default (printf "%s-%s" (include "kr.objName" $v.realm.name) (include "kr.objName" .username) | trunc 63 | trimSuffix "-") }}
   namespace: {{ $.Release.Namespace }}
   labels:
     {{- include "kr.labels" $ | nindent 4 }}

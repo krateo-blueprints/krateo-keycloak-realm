@@ -646,6 +646,12 @@
           },
           "enabled": {
             "type": "boolean"
+          },
+          "name": {
+            "type": "string",
+            "description": "KeycloakUser object name; set it to adopt an existing CR in place. Default <realm>-<username>.",
+            "maxLength": 63,
+            "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
           }
         }
       }

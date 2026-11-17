@@ -11,7 +11,7 @@ import yaml
 
 CHART = Path("helm/krateo-keycloak-realm")
 BASE = ["--set", "parentClient.redirectUris[0]=https://x/auth"]
-USERS = ["--set-json", 'users=[{"username":"persona-a","email":"a@example.invalid","emailVerified":true},{"username":"persona-b","enabled":false}]']
+USERS = ["--set-json", 'users=[{"username":"a","name":"persona-a","email":"a@example.invalid","emailVerified":true},{"username":"b","enabled":false}]']
 
 
 def render(extra):
@@ -47,6 +47,9 @@ def problems(docs):
 errors = []
 users, errs = problems(render(USERS))
 errors += errs
+names = sorted(d["metadata"]["name"] for d in users)
+if names != ["krateo-b", "persona-a"]:
+    errors.append(f"object names {names}: an explicit `name` must be used verbatim (adoption), else <realm>-<username>")
 if len(users) != 2:
     errors.append(f"expected 2 KeycloakUsers from 2 users[] entries, rendered {len(users)}")
 if [d for d in render([]) if d["kind"] == "KeycloakUser"]:
