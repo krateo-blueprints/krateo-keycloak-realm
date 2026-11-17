@@ -82,6 +82,14 @@ in values.schema.json, which crdgen would turn into a CRD-level constraint on ex
 {{- end -}}
 {{- $_ := set $users $k true -}}
 {{- end -}}
+{{- $objs := dict -}}
+{{- range $v.users -}}
+{{- $o := .name | default (printf "%s-%s" (include "kr.objName" $v.realm.name) (include "kr.objName" .username) | trunc 63 | trimSuffix "-") -}}
+{{- if hasKey $objs $o -}}
+{{- fail (printf "users: two entries render the same KeycloakUser object name %q (set a distinct `name`)" $o) -}}
+{{- end -}}
+{{- $_ := set $objs $o true -}}
+{{- end -}}
 {{- if $v.identityLifecycle.enabled -}}
 {{- if or (not $v.identityLifecycle.secret.name) (not $v.identityLifecycle.secret.key) -}}
 {{- fail "identityLifecycle.secret.name and .key are required when identityLifecycle.enabled (the Secret identity-lifecycle mounts)" -}}

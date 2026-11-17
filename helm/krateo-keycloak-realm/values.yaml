@@ -131,7 +131,9 @@ groups:
 # person. Real email addresses belong ONLY in a private values file, never in a chart default.
 # Group membership is not set here: identity-lifecycle's GroupMembership manages it.
 users: []
-#  - username: persona-ada        # required; unique, case-insensitive
+#  - username: ada                # required; the Keycloak username, unique, case-insensitive
+#    name: persona-ada            # optional KeycloakUser OBJECT name; set it to adopt an existing CR in
+#                                 # place (default <realm>-<username>, e.g. krateo-ada)
 #    firstName: Ada
 #    lastName: Persona
 #    email: ada@example.com
