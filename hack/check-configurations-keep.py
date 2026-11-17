@@ -48,8 +48,8 @@ def missing(docs):
 docs = render()
 cfgs, bad = missing(docs)
 errors = []
-if len(cfgs) < 5:
-    errors.append(f"expected 5 Configurations (realm, group, client, user profile, service-account role mapping), rendered {len(cfgs)}")
+if len(cfgs) < 6:
+    errors.append(f"expected 6 Configurations (realm, group, user, client, user profile, service-account role mapping), rendered {len(cfgs)}")
 errors += [f"{k} lacks helm.sh/resource-policy: keep (uninstall would deadlock the CRs' finalizers)" for k in bad]
 mutant = [dict(d, metadata={k: v for k, v in d["metadata"].items() if k != "annotations"}) for d in docs]
 if not missing(mutant)[1]:

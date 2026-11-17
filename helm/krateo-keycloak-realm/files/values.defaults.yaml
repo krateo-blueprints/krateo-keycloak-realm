@@ -127,6 +127,20 @@ groups:
   - name: tenants
   - name: platform-admins
 
+# Realm users this chart owns (e.g. a demo's personas). NO passwords are rendered: each user sets the
+# first one with the login page's "Forgot password?" (needs realm.resetPasswordAllowed and realm.smtp).
+# Each renders a KeycloakUser with helm.sh/resource-policy: keep, and the chart's deletionPolicy
+# (default orphan) applies to the Keycloak user, so neither an uninstall nor a feature-off deletes a
+# person. Real email addresses belong ONLY in a private values file, never in a chart default.
+# Group membership is not set here: identity-lifecycle's GroupMembership manages it.
+users: []
+#  - username: persona-ada        # required; unique, case-insensitive
+#    firstName: Ada
+#    lastName: Persona
+#    email: ada@example.com
+#    emailVerified: true          # optional
+#    enabled: true                # optional, default true
+
 # The realm's declarative user profile: which user attributes exist and who may see or change them.
 # Keycloak keeps ONE profile per realm, so this chart owns it whole. It is rendered as Keycloak's own
 # default profile (username, email, firstName, lastName and the user-metadata group, verbatim from

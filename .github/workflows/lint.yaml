@@ -57,6 +57,8 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
+      - name: users[] render keep, a deletion policy and no credentials; the default renders none
+        run: python3 hack/check-users.py
       - name: Checkout
         uses: actions/checkout@v7
 

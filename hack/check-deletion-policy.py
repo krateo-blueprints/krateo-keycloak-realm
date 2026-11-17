@@ -11,7 +11,7 @@ CHART = Path("helm/krateo-keycloak-realm")
 # Every optional client switched on, so the new objects are checked too (0.5.0).
 ALL = ["--set", "identityLifecycle.enabled=true", "--set", "ideClient.enabled=true",
        "--set", "ideClient.audience=https://x/mcp", "--set", "clients[0].clientId=rp",
-       "--set", "clients[0].redirectUris[0]=https://rp/cb"]
+       "--set", "clients[0].redirectUris[0]=https://rp/cb", "--set", "users[0].username=persona-ci"]
 
 
 def render(extra=()):
