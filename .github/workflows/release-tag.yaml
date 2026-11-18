@@ -166,7 +166,12 @@ jobs:
           done < <(find . -type f -name compositiondefinition.yaml -not -path '*/charts/*' -print0)
           echo "CompositionDefinitions stamped: $found"
 
+      # hack/push-chart.sh: helm push, surviving GHCR's tag read-after-write race (and only that) by tagging the same
+      # digest once the registry serves it (seen on keycloak-config-kog 0.11.0 and rabbitmq-operator-blueprint).
       - name: Package and push
+        env:
+          REGISTRY_USER: ${{ github.actor }}
+          REGISTRY_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           # Refuse here, before GHCR holds the version, every archive the Marketplace index's publisher
@@ -259,7 +264,7 @@ jobs:
             helm package "$dir" --version "${VERSION}" --destination /tmp/pkg
             tgz="/tmp/pkg/${name}-${VERSION}.tgz"
             gate "$name" "$tgz" blueprints || exit 1
-            helm push "$tgz" "${OCI_REPO}"
+            bash hack/push-chart.sh "$tgz" "${OCI_REPO}"
             echo "pushed ${name}:${VERSION}"
             # The same bytes that went to GHCR, for the index.
             cp "$tgz" charts-dist/
