@@ -624,9 +624,10 @@
         "properties": {
           "username": {
             "type": "string",
-            "minLength": 1,
+            "minLength": 3,
             "maxLength": 255,
-            "pattern": "^[A-Za-z0-9._@-]+$"
+            "pattern": "^[A-Za-z0-9._@-]+$",
+            "description": "Length bounds mirror the realm user profile's username validation (files/keycloak-26-default-user-profile.json: min 3, max 255); Keycloak refuses a shorter username with a 400 at create, so the chart refuses it at render."
           },
           "firstName": {
             "type": "string",
