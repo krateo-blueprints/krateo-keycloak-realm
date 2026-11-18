@@ -34,4 +34,14 @@ spec:
         name: {{ $v.configuration.tokenSecret.name }}
         namespace: {{ $.Release.Namespace }}
         key: {{ $v.configuration.tokenSecret.key }}
+  {{- if eq . "KeycloakUserConfiguration" }}
+  # The KOG's user findby asks Keycloak for ONE user (?username=<spec.username>&exact=true) instead of reading its
+  # default first page of 100 users, where a user sorting beyond the page was created once and then never found
+  # again (CreateOutcomeUnknown, measured 2026-11-18). `exact` is a KOG configurationField, so it lives here, on the
+  # Configuration, not on the CR -- a user cannot turn it off. Needs keycloak-config-kog >= 0.11.0.
+  configuration:
+    query:
+      findby:
+        exact: true
+  {{- end }}
 {{- end }}

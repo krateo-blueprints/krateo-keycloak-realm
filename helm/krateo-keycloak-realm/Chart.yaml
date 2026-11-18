@@ -30,5 +30,8 @@ annotations:
   # keycloak-config-kog >= 0.9.2 since 0.5.3: this chart always renders the two Remember me timeouts, and an
   # older KOG's CRD prunes them silently (measured: the CR keeps rememberMe, loses the timeouts, and stays
   # Ready), so the realm and the KOG move as a pair. KOG 0.9.x itself needs oasgen-provider >= 0.67.0.
-  krateo.io/requires-keycloak-config-kog: ">= 0.9.2"
+  # keycloak-config-kog >= 0.11.0 since 0.6.3: the KeycloakUserConfiguration carries configuration.query.findby.exact,
+  # which 0.11.0 declares (an older KOG's Configuration CRD has no `configuration` block and PRUNES it silently, so
+  # the user findby would keep reading only Keycloak's first page of 100 users). Measured on 0.11.0 with oasgen 0.80.0.
+  krateo.io/requires-keycloak-config-kog: ">= 0.11.0"
   krateo.io/requires-oasgen-provider: ">= 0.67.0"
