@@ -77,6 +77,11 @@ try:
         errors.append("a 2-character username was refused, but not by the length rule: " + _p.stderr.strip()[:200])
 finally:
     shutil.rmtree(_w, ignore_errors=True)
+# The rendered KeycloakUserConfiguration must carry configuration.query.findby.exact: true. Without it the KOG's user
+# findby reads only Keycloak's first page of 100 users and strands a user sorting beyond it (measured 2026-11-18).
+_ucfg = [d for d in render([]) if d["kind"] == "KeycloakUserConfiguration"]
+if len(_ucfg) != 1 or ((_ucfg[0].get("spec") or {}).get("configuration") or {}).get("query", {}).get("findby", {}).get("exact") is not True:
+    errors.append("KeycloakUserConfiguration must render configuration.query.findby.exact: true (the KOG user findby's exact match)")
 print(f"Checked {len(users)} KeycloakUser(s): keep, deletion-policy, no credentials; default renders none.")
 for e in errors:
     print(f"::error::{e}")
