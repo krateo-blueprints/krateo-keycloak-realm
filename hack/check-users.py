@@ -11,7 +11,7 @@ import yaml
 
 CHART = Path("helm/krateo-keycloak-realm")
 BASE = ["--set", "parentClient.redirectUris[0]=https://x/auth"]
-USERS = ["--set-json", 'users=[{"username":"a","name":"persona-a","email":"a@example.invalid","emailVerified":true},{"username":"b","enabled":false}]']
+USERS = ["--set-json", 'users=[{"username":"ada","name":"persona-a","email":"ada@example.invalid","emailVerified":true},{"username":"bob","enabled":false}]']
 
 
 def render(extra):
@@ -48,7 +48,7 @@ errors = []
 users, errs = problems(render(USERS))
 errors += errs
 names = sorted(d["metadata"]["name"] for d in users)
-if names != ["krateo-b", "persona-a"]:
+if names != ["krateo-bob", "persona-a"]:
     errors.append(f"object names {names}: an explicit `name` must be used verbatim (adoption), else <realm>-<username>")
 if len(users) != 2:
     errors.append(f"expected 2 KeycloakUsers from 2 users[] entries, rendered {len(users)}")
@@ -57,6 +57,26 @@ if [d for d in render([]) if d["kind"] == "KeycloakUser"]:
 mutant = [dict(d, metadata=dict(d["metadata"], annotations={k: v for k, v in (d["metadata"].get("annotations") or {}).items() if k != "helm.sh/resource-policy"})) if d["kind"] == "KeycloakUser" else d for d in render(USERS)]
 if not problems(mutant)[1]:
     errors.append("self-test: stripping `keep` was NOT detected")
+# The users[].username length bounds must equal the realm user profile's username validation, which Keycloak
+# enforces at create (a 1-char username was refused with a 400 on a live cluster, 2026-11-18). One source of truth:
+# the chart's own copy of Keycloak's default user profile. Plus a render-time negative: 2 chars must be refused.
+import json as _json
+_prof = _json.load(open(CHART / "files" / "keycloak-26-default-user-profile.json"))
+_len = [a for a in _prof["attributes"] if a["name"] == "username"][0]["validations"]["length"]
+_sch = _json.load(open(CHART / "values.schema.json"))["properties"]["users"]["items"]["properties"]["username"]
+if (_sch.get("minLength"), _sch.get("maxLength")) != (int(_len["min"]), int(_len["max"])):
+    errors.append("users[].username minLength/maxLength %s/%s != user profile username length %s/%s"
+                  % (_sch.get("minLength"), _sch.get("maxLength"), _len["min"], _len["max"]))
+_w = Path(tempfile.mkdtemp(prefix="users-neg-"))
+try:
+    shutil.copytree(CHART, _w / "c"); _cy = _w / "c" / "Chart.yaml"; _cy.write_text(_cy.read_text().replace("CHART_VERSION", "0.0.0-ci"))
+    _p = subprocess.run(["helm", "template", "r", str(_w / "c"), *BASE, "--set-json", 'users=[{"username":"ab"}]'], capture_output=True, text=True)
+    if _p.returncode == 0:
+        errors.append("a 2-character username rendered: the realm user profile (min %s) would refuse it at create" % _len["min"])
+    elif "username" not in _p.stderr or ("minLength" not in _p.stderr and "greater than or equal" not in _p.stderr):
+        errors.append("a 2-character username was refused, but not by the length rule: " + _p.stderr.strip()[:200])
+finally:
+    shutil.rmtree(_w, ignore_errors=True)
 print(f"Checked {len(users)} KeycloakUser(s): keep, deletion-policy, no credentials; default renders none.")
 for e in errors:
     print(f"::error::{e}")
