@@ -9,6 +9,47 @@ timestamp: 2026-11-11T00:00:00Z
 
 # Log
 
+## 2026-11-24 — 0.7.0: personal agents (Hermes, anonymous registration) and `mcp.*`
+
+**Why.** Personal agents (Hermes, OpenClaw) sign in to the MCP endpoint like IDEs do. Hermes is pre-registered; OpenClaw
+registers its own client (RFC 7591), so the realm must accept anonymous registration without opening itself up.
+
+**What.**
+- `mcp.audience` / `mcp.groupsClaim`: one value for every MCP client. **Breaking:** `ideClient.audience` and
+  `ideClient.groupsClaim` are gone, and a non-empty value there fails the render, naming the new key (a silently
+  ignored audience would mint tokens the gateway rejects). Empty values, which `--reuse-values` carries from 0.6.x, pass.
+- `hermesClient`: public PKCE client, redirect `http://127.0.0.1/callback`.
+- The `mcp` client scope (deterministic id, three scope mappers) with ANY MCP client, assigned as optional to `krateo-ide`
+  and `hermes`: an unassigned requested scope is a hard `invalid_scope`, and every MCP client requests `scope=mcp`.
+- `agentRegistration`: the default Trusted Hosts, Allowed Client Scopes (`mcp`, `offline_access`, next to the realm's default and default-optional scopes) and Max Clients Limit
+  policies adopted and tightened (always `orphan`); a created client-disabled policy; the `agent-dcr` client profile and
+  policy; `CLIENT_REGISTER` and `CLIENT_DELETE` events; `view-events` for identity-lifecycle's service account (never
+  `view-clients`, which exposes every client secret). Refuses to render without user events kept >= 14 days and admin events on.
+- `realm.offlineSessions.maxLifespan`, default 30 days, realm-wide: **existing installs get the cap on upgrade**, so an
+  offline session older than 30 days ends. `0` keeps Keycloak's behaviour (no maximum).
+- Needs keycloak-config-kog >= 0.15.0 (`KeycloakClientOptionalClientScope`, the realm's offline-session fields, and missing
+  registration-policy keys counting as drift).
+
+**Validated live on kc-roll057** (keycloak-config-kog 0.15.0, oasgen-provider 0.91.1, Keycloak 26.6.3): a fresh realm with
+every agent feature on converged with nothing touched by hand (18 resources, 5.5 to 7.5 min in two runs) while the existing
+realm stayed Ready; 33 of 33 sign-in and registration checks (krateo-ide, Hermes, an OpenClaw-shaped agent; controls
+included); `mcp.audience` changed in all three places in 13 s; then no update over 7 min. In-cluster only: the external
+hostname and the gateway's registration rate limit were not part of it.
+
+**Who can read client secrets.** On Keycloak 26.6.3 realm-management `view-clients` (and `manage-clients`, `realm-admin`)
+exposes every confidential client's secret in the realm: in the client list, by id, and at the client-secret endpoint
+(measured). This chart grants none of them to any service account: identity-lifecycle's holds `manage-users`, `view-users`,
+`query-groups`, and `view-events` when agent registration is on. Outside this chart, the Keycloak admin identity
+keycloak-config-kog uses can read them, as it manages the clients.
+
+**Measured on Keycloak 26.6.3 (kc-roll057), and the design follows it.** A 127.0.0.1 redirect matches any port, the path is
+exact, and `localhost` is refused. OpenClaw registers its redirect WITH a port, on two paths; a pattern without a port
+refused both. Registering with `"scope": "mcp offline_access"` gives `basic` by default and both as optional scopes.
+`"openid mcp"` is refused. Registered clients require consent. Offline refresh tokens have no expiry by default; their
+access tokens carry `sid` and `typ: Bearer`, which authn requires.
+A scope's mappers and a client's default scopes are create-only, which is why the scope mappers are their own CRs.
+A client's inline mappers do update, so the IDE and Hermes clients keep theirs inline.
+
 ## 2026-11-15 — 0.5.3: Remember me (`realm.rememberMe`, `realm.rememberMeSessions`)
 
 Opt-in values for Keycloak's Remember me: the checkbox on the sign-in page and the SSO idle / max timeouts of

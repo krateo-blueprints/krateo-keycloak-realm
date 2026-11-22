@@ -1,0 +1,114 @@
+{{- $v := include "kr.values" . | fromYaml }}
+{{- include "kr.check" . }}
+{{- $a := $v.agentRegistration }}
+{{- if $a.enabled }}
+{{- $realmObj := include "kr.objName" $v.realm.name }}
+{{- $crt := "org.keycloak.services.clientregistration.policy.ClientRegistrationPolicy" }}
+{{- /* Anonymous registration policies. The first three ADOPT the realm's defaults (natural key name + subType) and are
+ALWAYS `orphan`, whatever deletionPolicy says: deleting the CR must never remove the realm's constraint. */ -}}
+{{- range $p := list
+      (dict "obj" "trusted-hosts" "name" "Trusted Hosts" "provider" "trusted-hosts" "adopt" true
+            "config" (dict "trusted-hosts" (list "127.0.0.1") "host-sending-registration-request-must-match" (list "false") "client-uris-must-match" (list "true")))
+      (dict "obj" "allowed-client-scopes" "name" "Allowed Client Scopes" "provider" "allowed-client-templates" "adopt" true
+            "config" (dict "allowed-client-scopes" (list "mcp" "offline_access") "allow-default-scopes" (list "true")))
+      (dict "obj" "max-clients" "name" "Max Clients Limit" "provider" "max-clients" "adopt" true
+            "config" (dict "max-clients" (list (toString $a.maxClients))))
+      (dict "obj" "client-disabled" "name" "krateo client-disabled" "provider" "client-disabled" "adopt" false "config" dict) }}
+---
+apiVersion: {{ $v.resourceGroup }}/v1
+kind: KeycloakClientRegistrationPolicy
+metadata:
+  name: {{ $realmObj }}-anon-{{ $p.obj }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "kr.labels" $ | nindent 4 }}
+  annotations:
+    {{- if $p.adopt }}
+    krateo.io/deletion-policy: orphan
+    {{- else }}
+    {{- include "kr.deletionPolicy" $ | nindent 4 }}
+    {{- end }}
+spec:
+  {{- include "kr.configurationRef" $ | nindent 2 }}
+  realm: {{ $v.realm.name | quote }}
+  name: {{ $p.name | quote }}
+  subType: anonymous
+  providerId: {{ $p.provider }}
+  providerType: {{ $crt }}
+  {{- if $p.config }}
+  config:
+    {{- range $k, $val := $p.config }}
+    {{ $k }}:
+      {{- toYaml $val | nindent 6 }}
+    {{- end }}
+  {{- else }}
+  config: {}
+  {{- end }}
+{{- end }}
+---
+# Executors enforced on anonymously registered clients (the policy below): PKCE S256, loopback-only http redirects,
+# exactly http://127.0.0.1/oauth/mcp/callback (any port; Keycloak matches the port-agnostic 127.0.0.1 form), no full
+# scope. The CR owns the realm's WHOLE (non-global) profile list.
+apiVersion: {{ $v.resourceGroup }}/v1
+kind: KeycloakClientProfiles
+metadata:
+  name: {{ $realmObj }}-client-profiles
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kr.labels" . | nindent 4 }}
+  annotations:
+    {{- include "kr.deletionPolicy" . | nindent 4 }}
+spec:
+  {{- include "kr.configurationRef" . | nindent 2 }}
+  realm: {{ $v.realm.name | quote }}
+  profiles:
+    - name: agent-dcr
+      description: Anonymously registered personal agents
+      executors:
+        - executor: pkce-enforcer
+          configuration:
+            auto-configure: true
+        - executor: secure-redirect-uris-enforcer
+          configuration:
+            allow-ipv4-loopback-address: true
+            allow-http-scheme: true
+            allow-open-redirect: false
+            allow-wildcard-context-path: false
+        - executor: secure-client-uris-pattern
+          configuration:
+            client-uri-fields:
+              - redirectUris
+            # OpenClaw registers its redirect WITH the port it listens on: /oauth/mcp/callback with the Gateway
+            # running, :8989/oauth/callback for a CLI login with the Gateway stopped. Measured on 26.6.3: a
+            # portless pattern refused both; this one accepts both and refuses localhost, public hosts, suffixes.
+            allowed-patterns:
+              - '^http://127\.0\.0\.1(:[0-9]{1,5})?/oauth/(mcp/)?callback$'
+        - executor: full-scope-disabled
+          configuration:
+            auto-configure: true
+---
+apiVersion: {{ $v.resourceGroup }}/v1
+kind: KeycloakClientPolicies
+metadata:
+  name: {{ $realmObj }}-client-policies
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kr.labels" . | nindent 4 }}
+  annotations:
+    {{- include "kr.deletionPolicy" . | nindent 4 }}
+spec:
+  {{- include "kr.configurationRef" . | nindent 2 }}
+  realm: {{ $v.realm.name | quote }}
+  policies:
+    - name: agent-dcr
+      description: Enforce agent-dcr on anonymously registered clients
+      enabled: true
+      conditions:
+        - condition: client-updater-context
+          configuration:
+            update-client-source:
+              - ByAnonymous
+              - ByRegistrationAccessToken
+      profiles:
+        - agent-dcr
+{{- end }}

@@ -87,8 +87,8 @@ rest-dynamic-controller deployment.
 with when they reach the platform's MCP endpoint (`claude mcp add --transport http <name>
 https://<portal host>/mcp --client-id krateo-ide --callback-port <port>`). It is public (no secret),
 authorization code with PKCE S256 only, and redirects to any loopback port. Its access token carries
-`preferred_username`, the same bare-name `groups` claim as the portal client, and `ideClient.audience`
-in `aud`, which the MCP gateway compares byte-for-byte. Set it per install; it has no default. The
+`preferred_username`, the same bare-name `groups` claim as the portal client, and `mcp.audience`
+(`ideClient.audience` before 0.7.0) in `aud`, which the MCP gateway compares byte-for-byte. Set it per install; it has no default. The
 issuer is the realm's, the same as the portal's, so authn matches the IDE's user to their portal user.
 
 **Known limit in 0.5.0, gone on current oasgen-provider.** The client has two protocol mappers
@@ -97,6 +97,52 @@ oasgen-provider 0.63.1 compared a list of objects by position, so after creating
 its KeycloakClient latched `Ready=False` with `DriftNotConverging`. Sign-in worked; the condition was
 wrong. With oasgen-provider 0.74.0 both `krateo-krateo-ide` and `krateo-krateo-portal` reach
 `Available` (measured 2026-11-16 through the installer, krateo-keycloak-realm 0.5.3, Keycloak 26).
+
+## Personal agents: Hermes and anonymous registration (0.7.0)
+
+Personal agents reach the same MCP endpoint as IDEs, and their access tokens must carry the same three claims authn's
+`/delegate` reads: `preferred_username`, bare-name `groups`, and `mcp.audience` in `aud`. Lightweight access tokens stay
+off on every MCP client: they would drop `sid`, which authn requires of a user token.
+
+**Hermes** (`hermesClient.enabled`) is pre-registered: `hermes`, public, PKCE S256, redirect exactly
+`http://127.0.0.1/callback`. Keycloak matches a registered `http://127.0.0.1/<path>` on **any port** (measured on 26.6.3)
+and refuses `localhost`, so Hermes must bind `127.0.0.1`.
+
+**The `mcp` client scope** is rendered whenever any MCP client is on, and assigned as **optional** to `krateo-ide` and
+`hermes` (`KeycloakClientOptionalClientScope`). Every MCP client requests `scope=mcp`, which the gateway advertises, and
+Keycloak answers a requested scope the client does not hold with a hard `invalid_scope` (measured). A client's scope list
+is create-only in Keycloak, so the assignment is its own CR and also works on a client that already exists. These two
+clients carry the same claims inline; a token then holds the audience and `groups` once (measured).
+
+**Anonymous registration** (`agentRegistration.enabled`) lets an agent such as OpenClaw register its own client at
+`/realms/<realm>/clients-registrations/openid-connect`, with no admin token. The chart makes that safe:
+
+| Object | What it enforces |
+|---|---|
+| `mcp` client scope (fixed id) + 3 `KeycloakClientScopeProtocolMapper`s | the claims above. The agent registers with `"scope": "mcp offline_access"` and authorizes with the same; `"openid mcp"` at registration is refused. The scope's id is derived from the realm name, so the mappers can name it; they follow `mcp.audience` when the host changes (Keycloak ignores mappers on a scope update, hence one CR per mapper) |
+| Trusted Hosts (adopted) | redirect and client URIs only on `127.0.0.1`; the registering host is not checked (agents register from anywhere) |
+| Allowed Client Scopes (adopted) | `mcp` and `offline_access`, plus the realm's own default and default-optional scopes (`email`, `profile`, `roles`, `phone`, ...): `allow-default-scopes` stays `true`, because Keycloak refuses a registration otherwise. Any other scope of the realm, or an unknown one, is refused (measured). OpenClaw always asks for `offline_access`: its MCP SDK adds it whenever discovery offers it |
+| Max Clients Limit (adopted) | `agentRegistration.maxClients` registered clients in the realm |
+| `krateo client-disabled` (created) | every registered client starts **disabled** until a realm admin enables it |
+| `agent-dcr` client profile + policy | on anonymous registrations: PKCE S256, loopback http only, full scope off, and a redirect of exactly `http://127.0.0.1[:port]/oauth/mcp/callback` (OpenClaw with its Gateway running) or `/oauth/callback` (its CLI login). `localhost`, public hosts and any other path are refused |
+| `CLIENT_REGISTER`, `CLIENT_DELETE` event types | added to `realm.events.types`: identity-lifecycle's cleanup finds clients registered more than 7 days ago and never enabled from these events and the realm's admin events |
+
+Full scope is off on registered clients, so requesting `roles` adds no role the client is not mapped to, and every scope a
+client asks for is listed on the consent screen.
+
+A registered client requires **consent**, so the user's first sign-in shows Keycloak's consent screen ("Offline Access",
+"mcp"). Its refresh token is an **offline** one; `realm.offlineSessions.maxLifespan` (default 30 days) caps it, so an agent
+signs in again at least every 30 days. The cap is realm-wide and applies to every client's offline sessions; `0` removes it
+(Keycloak's default, under which an offline session that keeps being used never expires). Removing a user from their group
+takes effect at the agent's next refresh: the new access token has no `groups`, and authn refuses it.
+
+The three default policies are **adopted** (found by name and sub-type) and always `orphan`, whatever `deletionPolicy`
+says: deleting a CR must never remove a constraint from the realm. The client profiles and policies CRs own the realm's
+**whole** (non-global) profile and policy lists.
+
+Registration requires the realm's user events to be on and kept at least 14 days, and its admin events to be on, or the
+render fails: the cleanup reads registrations older than 7 days, and a client an admin enabled and later disabled (an
+admin event on it) is never cleaned up.
 
 ## Changing the spec can delete keys from the realm's attributes
 

@@ -49,6 +49,12 @@ spec:
   realm: {{ $v.realm.name | quote }}
   clientId: {{ $il.clientId | quote }}
   roleClientId: {{ $il.roleClientId | quote }}
+  {{- $roles := $il.roles }}
+  {{- /* identity-lifecycle's report of never-enabled registrations reads events ONLY: view-clients would expose every
+  client secret of the realm (measured on 26.6.3). */}}
+  {{- if and $v.agentRegistration.enabled (not (has "view-events" $roles)) }}
+  {{- $roles = append $roles "view-events" }}
+  {{- end }}
   roles:
-    {{- toYaml $il.roles | nindent 4 }}
+    {{- toYaml $roles | nindent 4 }}
 {{- end }}

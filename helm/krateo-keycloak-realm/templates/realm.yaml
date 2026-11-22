@@ -26,8 +26,22 @@ spec:
   rememberMe: {{ $r.rememberMe | default false }}
   ssoSessionIdleTimeoutRememberMe: {{ int (($r.rememberMeSessions | default dict).idleTimeout | default 0) }}
   ssoSessionMaxLifespanRememberMe: {{ int (($r.rememberMeSessions | default dict).maxLifespan | default 0) }}
+  {{- /* Always rendered, so setting 0 again really removes the cap (Keycloak keeps the last lifespan otherwise). */}}
+  {{- $offMax := int (($r.offlineSessions | default dict).maxLifespan | default 0) }}
+  offlineSessionMaxLifespanEnabled: {{ gt $offMax 0 }}
+  {{- if gt $offMax 0 }}
+  offlineSessionMaxLifespan: {{ $offMax }}
+  {{- end }}
   eventsEnabled: {{ $r.events.enabled }}
-  {{- with $r.events.types }}
+  {{- $types := $r.events.types | default list }}
+  {{- /* The never-enabled cleanup of anonymously registered clients reads these: a registration, and a client deleting
+  itself with its registration token. */}}
+  {{- range $t := list "CLIENT_REGISTER" "CLIENT_DELETE" }}
+  {{- if and $v.agentRegistration.enabled (not (has $t $types)) }}
+  {{- $types = append $types $t }}
+  {{- end }}
+  {{- end }}
+  {{- with $types }}
   enabledEventTypes:
     {{- toYaml . | nindent 4 }}
   {{- end }}

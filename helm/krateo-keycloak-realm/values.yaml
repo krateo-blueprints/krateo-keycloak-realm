@@ -44,6 +44,12 @@ realm:
   rememberMeSessions:
     idleTimeout: 0
     maxLifespan: 0
+  # Offline sessions (refresh tokens of scope offline_access, e.g. personal agents such as OpenClaw, whose MCP SDK
+  # always asks for it): the maximum lifetime from creation, in seconds. 0 = no maximum (Keycloak's default: an
+  # offline session that keeps being used never expires; only Keycloak's 30-day idle timeout ends it). Default 30
+  # days: agents sign in again about monthly. Realm-wide, so it caps every client's offline sessions.
+  offlineSessions:
+    maxLifespan: 2592000
   # User events (logins, the set-password link, profile changes) kept by Keycloak for `expiration`
   # seconds. `types` must be Keycloak EventType names: CI checks them against the pinned list in
   # hack/testdata (an unknown name is stored by Keycloak without complaint, records nothing, and
@@ -223,13 +229,40 @@ ideClient:
   enabled: false
   clientId: krateo-ide
   name: Krateo IDE (MCP)
-  # Empty by default (unset); REQUIRED when enabled: the chart refuses to render without it. The MCP
-  # resource the gateway expects in the access token's `aud`, e.g. https://cmp.example.com/mcp
-  audience: ""
+  # audience and groupsClaim moved to mcp.audience / mcp.groupsClaim in 0.7.0 (one value for every MCP client);
+  # setting them here fails the render, naming the new key.
   redirectUris:
     - http://localhost:*
     - http://127.0.0.1:*
+
+# The MCP resource every MCP client's ACCESS token must name, and the claims the gateway and authn's /delegate
+# read. ONE value for the IDE client, the Hermes client and anonymously registered agent clients, so they cannot
+# drift from agentgateway-policies' mcpEntry audience and agentiko-mcp-server's subjectAudiences.
+mcp:
+  # REQUIRED (the render fails without it) when ideClient, hermesClient or agentRegistration is enabled,
+  # e.g. https://cmp.example.com/mcp
+  audience: ""
+  # Claim name of the group-membership mapper (not full path): what authn's allowedGroups reads.
   groupsClaim: groups
+
+# Hermes Agent, pre-registered: a public native client (PKCE S256), redirecting to http://127.0.0.1/callback on any
+# port (Keycloak matches a 127.0.0.1 redirect port-agnostically, measured; `localhost` is refused). Fixed redirect:
+# Hermes binds 127.0.0.1 and its path is /callback.
+hermesClient:
+  enabled: false
+  clientId: hermes
+  name: Hermes Agent (MCP)
+
+# Anonymous dynamic client registration for personal agents (OpenClaw): clients register themselves, start
+# DISABLED until an admin enables them, may only redirect to http://127.0.0.1[:port]/oauth/mcp/callback or
+# /oauth/callback, and may only request the `mcp` scope (which carries the audience, groups and preferred_username
+# claims) and offline_access (which OpenClaw always asks for; see realm.offlineSessions). Adopts the realm's default
+# Trusted Hosts / Allowed Client Scopes / Max Clients Limit policies and records CLIENT_REGISTER events (the
+# never-enabled cleanup reads them). Needs keycloak-config-kog >= 0.15.0.
+agentRegistration:
+  enabled: false
+  # The realm's cap on registered clients (Keycloak's Max Clients Limit policy).
+  maxClients: 200
 
 # The authn OIDCConfig that puts "sign in with Keycloak" on the portal, derived from the same values
 # as the client above so the two cannot drift: clientID = parentClient.clientId, redirectURI =

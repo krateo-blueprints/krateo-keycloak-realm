@@ -42,8 +42,14 @@ timestamp: 2026-11-11T00:00:00Z
 | `identityLifecycle.{clientId,secret.name,secret.key}` | `identity-lifecycle`, `identity-lifecycle-idp`, `clientSecret` | the client and the generated Secret identity-lifecycle mounts (`accessRequest.keycloak.clientSecretRef`) |
 | `identityLifecycle.{roleClientId,roles[]}` | `realm-management`, `manage-users`/`view-users`/`query-groups` | exactly the roles its service account holds; a duplicate is refused |
 | `ideClient.enabled` / `clientId` / `name` | `false` / `krateo-ide` / `Krateo IDE (MCP)` | the public client IDEs sign in with for the MCP endpoint (needs keycloak-config-kog >= 0.9.1 with oasgen-provider >= 0.67.0, which match its two protocol mappers by name) |
-| `ideClient.audience` | `""` (unset) | **required** when enabled (the render refuses an empty value): the MCP resource the gateway expects in the access token's `aud`, byte-for-byte (`https://<portal host>/mcp`, no trailing slash) |
-| `ideClient.redirectUris[]` / `groupsClaim` | `http://localhost:*`, `http://127.0.0.1:*` / `groups` | loopback only (the IDE picks the port) |
+| `ideClient.redirectUris[]` | `http://localhost:*`, `http://127.0.0.1:*` | loopback only (the IDE picks the port) |
+| `ideClient.audience` / `groupsClaim` | removed in 0.7.0 | moved to `mcp.audience` / `mcp.groupsClaim`; a non-empty value here **fails the render**, naming the new key |
+| `mcp.audience` | `""` (unset) | **required** when `ideClient`, `hermesClient` or `agentRegistration` is enabled: the MCP resource the gateway expects in the access token's `aud`, byte-for-byte (`https://<portal host>/mcp`, no trailing slash). One value for every MCP client |
+| `mcp.groupsClaim` | `groups` | claim name of the bare-name group-membership mapper on every MCP client |
+| `hermesClient.enabled` / `clientId` / `name` | `false` / `hermes` / `Hermes Agent (MCP)` | Hermes Agent's pre-registered public client: PKCE S256, code flow only, redirect exactly `http://127.0.0.1/callback` (any port) |
+| `agentRegistration.enabled` | `false` | anonymous dynamic client registration for personal agents (needs keycloak-config-kog >= 0.15.0, `realm.events.enabled`, `realm.events.expiration` >= 1209600 (14 days) and `realm.adminEvents.enabled`); see usage |
+| `realm.offlineSessions.maxLifespan` | `2592000` (30 d) | maximum lifetime of an offline session, in seconds, realm-wide; `0` = no maximum (Keycloak's default) |
+| `agentRegistration.maxClients` | `200` | Keycloak's Max Clients Limit registration policy |
 | `oidcConfig.enabled` / `name` | `true` / `keycloak` | render authn's OIDCConfig (only where the `oidc.authn.krateo.io/v1alpha1` API exists); `name` is the `?name=` of `/oidc/login` |
 | `oidcConfig.keycloakUrl` | `""` | **required** when enabled: Keycloak's public base URL (the keycloak chart's `keycloak.hostname`); issuer = `<keycloakUrl>/realms/<realm.name>` |
 | `oidcConfig.discoveryUrl` | `""` | where authn reads discovery; empty = `<issuer>/.well-known/openid-configuration` |

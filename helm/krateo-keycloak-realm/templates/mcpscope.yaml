@@ -1,0 +1,81 @@
+{{- $v := include "kr.values" . | fromYaml }}
+{{- include "kr.check" . }}
+{{- if or $v.ideClient.enabled $v.hermesClient.enabled $v.agentRegistration.enabled }}
+{{- $realmObj := include "kr.objName" $v.realm.name }}
+{{- $sid := include "kr.mcpScopeId" $v }}
+---
+# The `mcp` client scope every MCP client may request (`scope=mcp`, which agentgateway advertises in
+# scopes_supported): it carries the claims authn's /delegate reads -- the MCP resource in `aud`, `groups` and
+# preferred_username (an anonymously registered client holds no `profile` scope). The IDE and Hermes clients carry
+# the same claims inline too; measured on 26.6.3 that a token then holds the audience and `groups` ONCE. A FIXED id (kr.mcpScopeId) so the mappers
+# below can name it: Keycloak ignores protocolMappers on a client-scope update (measured on 26.6.3), so each mapper
+# is its own KeycloakClientScopeProtocolMapper and follows mcp.audience when the cluster's host changes.
+apiVersion: {{ $v.resourceGroup }}/v1
+kind: KeycloakClientScope
+metadata:
+  name: {{ $realmObj }}-mcp
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kr.labels" . | nindent 4 }}
+  annotations:
+    {{- include "kr.deletionPolicy" . | nindent 4 }}
+spec:
+  {{- include "kr.configurationRef" . | nindent 2 }}
+  realm: {{ $v.realm.name | quote }}
+  id: {{ $sid | quote }}
+  name: mcp
+  protocol: openid-connect
+  attributes:
+    include.in.token.scope: "true"
+{{- range $m := list
+      (dict "obj" "audience" "name" "mcp-audience" "mapper" "oidc-audience-mapper"
+            "config" (dict "included.custom.audience" $v.mcp.audience "access.token.claim" "true" "id.token.claim" "false" "introspection.token.claim" "true"))
+      (dict "obj" "groups" "name" "groups" "mapper" "oidc-group-membership-mapper"
+            "config" (dict "claim.name" ($v.mcp.groupsClaim | default "groups") "full.path" "false" "access.token.claim" "true" "id.token.claim" "true" "userinfo.token.claim" "true"))
+      (dict "obj" "username" "name" "username" "mapper" "oidc-usermodel-property-mapper"
+            "config" (dict "user.attribute" "username" "claim.name" "preferred_username" "jsonType.label" "String" "access.token.claim" "true" "id.token.claim" "true" "userinfo.token.claim" "true")) }}
+---
+apiVersion: {{ $v.resourceGroup }}/v1
+kind: KeycloakClientScopeProtocolMapper
+metadata:
+  name: {{ $realmObj }}-mcp-{{ $m.obj }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "kr.labels" $ | nindent 4 }}
+  annotations:
+    {{- include "kr.deletionPolicy" $ | nindent 4 }}
+spec:
+  {{- include "kr.configurationRef" $ | nindent 2 }}
+  realm: {{ $v.realm.name | quote }}
+  clientScopeId: {{ $sid | quote }}
+  name: {{ $m.name }}
+  protocol: openid-connect
+  protocolMapper: {{ $m.mapper }}
+  config:
+    {{- range $k, $val := $m.config }}
+    {{ $k }}: {{ $val | quote }}
+    {{- end }}
+{{- end }}
+{{- /* `mcp` assigned to the pre-registered MCP clients as OPTIONAL: a client that requests a scope it is not
+assigned gets a hard invalid_scope (measured), and every MCP client requests `scope=mcp`. Keycloak ignores
+optionalClientScopes on a client update, so the assignment is its own CR (works on an existing client too). */ -}}
+{{- range $c := list $v.ideClient $v.hermesClient }}
+{{- if $c.enabled }}
+---
+apiVersion: {{ $v.resourceGroup }}/v1
+kind: KeycloakClientOptionalClientScope
+metadata:
+  name: {{ $realmObj }}-{{ include "kr.objName" $c.clientId }}-mcp
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "kr.labels" $ | nindent 4 }}
+  annotations:
+    {{- include "kr.deletionPolicy" $ | nindent 4 }}
+spec:
+  {{- include "kr.configurationRef" $ | nindent 2 }}
+  realm: {{ $v.realm.name | quote }}
+  clientId: {{ $c.clientId | quote }}
+  clientScope: mcp
+{{- end }}
+{{- end }}
+{{- end }}

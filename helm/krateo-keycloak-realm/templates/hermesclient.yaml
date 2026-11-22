@@ -1,0 +1,58 @@
+{{- $v := include "kr.values" . | fromYaml }}
+{{- include "kr.check" . }}
+{{- $ide := $v.hermesClient }}
+{{- if $ide.enabled }}
+{{- $obj := printf "%s-%s" (include "kr.objName" $v.realm.name) (include "kr.objName" $ide.clientId) | trunc 63 | trimSuffix "-" }}
+---
+# Hermes Agent's pre-registered client: a public native client (no secret), authorization code + PKCE S256 only,
+# redirecting to http://127.0.0.1/callback (Keycloak matches a 127.0.0.1 redirect on any port, measured on 26.6.3;
+# `localhost` is refused, so Hermes must bind 127.0.0.1). The claims authn's /delegate reads live in the ACCESS token:
+# preferred_username (default `profile` scope), `groups` and the MCP resource in `aud`, from mcp.*. Lightweight access
+# tokens stay off: they would drop `sid`, which authn requires (authn#166).
+apiVersion: {{ $v.resourceGroup }}/v1
+kind: KeycloakClient
+metadata:
+  name: {{ $obj }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kr.labels" . | nindent 4 }}
+  annotations:
+    {{- include "kr.deletionPolicy" . | nindent 4 }}
+spec:
+  {{- include "kr.configurationRef" . | nindent 2 }}
+  realm: {{ $v.realm.name | quote }}
+  clientId: {{ $ide.clientId | quote }}
+  name: {{ $ide.name | default $ide.clientId | quote }}
+  enabled: true
+  protocol: openid-connect
+  publicClient: true
+  standardFlowEnabled: true
+  implicitFlowEnabled: false
+  directAccessGrantsEnabled: false
+  serviceAccountsEnabled: false
+  redirectUris:
+    - http://127.0.0.1/callback
+  attributes:
+    pkce.code.challenge.method: S256
+    client.use.lightweight.access.token.enabled: "false"
+  protocolMappers:
+    - name: groups
+      protocol: openid-connect
+      protocolMapper: oidc-group-membership-mapper
+      consentRequired: false
+      config:
+        full.path: "false"
+        claim.name: {{ $v.mcp.groupsClaim | default "groups" | quote }}
+        id.token.claim: "true"
+        access.token.claim: "true"
+        userinfo.token.claim: "true"
+    - name: mcp-audience
+      protocol: openid-connect
+      protocolMapper: oidc-audience-mapper
+      consentRequired: false
+      config:
+        included.custom.audience: {{ $v.mcp.audience | quote }}
+        access.token.claim: "true"
+        id.token.claim: "false"
+        introspection.token.claim: "true"
+{{- end }}

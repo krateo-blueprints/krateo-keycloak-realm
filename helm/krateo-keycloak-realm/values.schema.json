@@ -207,6 +207,21 @@
               }
             }
           }
+        },
+        "offlineSessions": {
+          "type": "object",
+          "title": "Offline sessions",
+          "additionalProperties": false,
+          "description": "Offline sessions (offline_access refresh tokens, e.g. personal agents).",
+          "properties": {
+            "maxLifespan": {
+              "type": "integer",
+              "minimum": 0,
+              "title": "Max lifespan",
+              "default": 2592000,
+              "description": "Maximum lifetime of an offline session from its creation, in seconds. 0 = no maximum (Keycloak's default). Realm-wide."
+            }
+          }
         }
       }
     },
@@ -490,12 +505,6 @@
           "description": "Shown on the consent and login pages.",
           "default": "Krateo IDE (MCP)"
         },
-        "audience": {
-          "type": "string",
-          "title": "MCP audience",
-          "description": "The MCP resource the gateway expects in the access token's aud, byte-for-byte, e.g. https://cmp.example.com/mcp (https, lowercase host, path /mcp, no trailing slash). Empty by default, meaning unset: the chart refuses to render when ideClient.enabled is true and this is empty, so it can never ship pointing at someone else's host.",
-          "default": ""
-        },
         "redirectUris": {
           "type": "array",
           "title": "Redirect URIs",
@@ -507,12 +516,6 @@
             "http://localhost:*",
             "http://127.0.0.1:*"
           ]
-        },
-        "groupsClaim": {
-          "type": "string",
-          "title": "Groups claim",
-          "description": "Token claim carrying bare group names, as for the portal client.",
-          "default": "groups"
         }
       }
     },
@@ -656,6 +659,69 @@
           }
         }
       }
+    },
+    "mcp": {
+      "type": "object",
+      "title": "MCP resource",
+      "description": "The MCP resource every MCP client's access token names, and the claims authn reads.",
+      "properties": {
+        "audience": {
+          "type": "string",
+          "title": "Audience",
+          "description": "The MCP resource in the access token's aud, e.g. https://cmp.example.com/mcp. Required when ideClient, hermesClient or agentRegistration is enabled.",
+          "default": ""
+        },
+        "groupsClaim": {
+          "type": "string",
+          "title": "Groups claim",
+          "description": "Claim name of the group-membership mapper.",
+          "default": "groups"
+        }
+      },
+      "additionalProperties": false
+    },
+    "hermesClient": {
+      "type": "object",
+      "title": "Hermes client",
+      "description": "Hermes Agent, pre-registered public client (PKCE S256), redirect http://127.0.0.1/callback.",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Enabled",
+          "default": false
+        },
+        "clientId": {
+          "type": "string",
+          "title": "Client ID",
+          "default": "hermes"
+        },
+        "name": {
+          "type": "string",
+          "title": "Name",
+          "default": "Hermes Agent (MCP)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "agentRegistration": {
+      "type": "object",
+      "title": "Agent registration",
+      "description": "Anonymous dynamic client registration for personal agents: clients start disabled, loopback-only redirects, mcp scope only.",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Enabled",
+          "default": false
+        },
+        "maxClients": {
+          "type": "integer",
+          "title": "Max clients",
+          "description": "Keycloak's Max Clients Limit policy.",
+          "minimum": 1,
+          "default": 200
+        }
+      },
+      "additionalProperties": false
     }
   }
 }

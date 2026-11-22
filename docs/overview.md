@@ -15,8 +15,8 @@ The chart renders, in the release namespace:
   keycloak-config-kog keeps fresh;
 - a `KeycloakRealm`, a `KeycloakGroup` per entry of `groups`, and a `KeycloakClient` for the portal;
 - optionally, confidential clients for relying parties (`clients[]`), identity-lifecycle's service-account
-  client with its exact realm-management roles (`identityLifecycle`), and the IDE client for MCP sign-in
-  (`ideClient`).
+  client with its exact realm-management roles (`identityLifecycle`), the IDE and Hermes clients for MCP sign-in
+  (`ideClient`, `hermesClient`), and anonymous registration for personal agents (`agentRegistration`).
 
 Users and group memberships are deliberately **not** declared here: they belong to whoever runs the
 joiner flow. Two writers on one user or membership fight forever.
