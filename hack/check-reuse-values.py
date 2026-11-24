@@ -16,9 +16,7 @@ import re, shutil, subprocess, sys, tempfile
 from pathlib import Path
 import yaml
 
-CHARTS = {"helm/krateo-keycloak-realm": [
-    "0.1.0", "0.2.0", "0.3.0", "0.3.1", "0.3.2", "0.3.3", "0.4.0", "0.5.0",
-    "0.5.1", "0.5.2", "0.5.3", "0.6.0", "0.6.1", "0.6.2", "0.6.3", "0.7.0", "0.7.1"]}
+CHARTS = ["helm/krateo-keycloak-realm"]  # each is rendered under every published release (the git tags)
 SETS = {"helm/krateo-keycloak-realm": ["--set", "parentClient.redirectUris[0]=https://x/cb"]}
 
 
@@ -50,21 +48,19 @@ _v = yaml.safe_load(open("helm/krateo-keycloak-realm/values.yaml"))
 _f = yaml.safe_load(open("helm/krateo-keycloak-realm/files/values.defaults.yaml"))
 if _v != _f:
     errors.append("files/values.defaults.yaml differs from values.yaml: keep them equal")
-# The list must hold every published release: it stopped at 0.3.2 while 0.6.3 was out, and an upgrade from any release in
-# between was never rendered (0.7.0's first guard refused 0.5.0 - 0.6.3's own default values).
-published = [t for t in subprocess.run(["git", "tag", "--list"], capture_output=True, text=True).stdout.split() if re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", t)]
-if not published:
-    errors.append("no release tags in this checkout (fetch-depth: 0 is needed): nothing would be checked")
-for chart, tags in CHARTS.items():
-    missing = sorted(set(published) - set(tags))
-    if missing:
-        errors.append(f"{chart}: add the published release(s) {missing} to CHARTS")
-for chart, tags in CHARTS.items():
+# Every published release, from the tags: a hand-kept list stopped at 0.3.2 while 0.6.3 was out, so upgrades from any release
+# in between were never rendered (0.7.0's first guard refused 0.5.0 - 0.6.3's own default values).
+published = sorted((t for t in subprocess.run(["git", "tag", "--list"], capture_output=True, text=True).stdout.split()
+                    if re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", t)), key=lambda t: [int(x) for x in t.split(".")])
+# 0.1.0 is the first release: without it the checkout has no tags, or not all of them (fetch-depth: 0 is needed)
+if "0.1.0" not in published:
+    errors.append("release tag 0.1.0 is not in this checkout (fetch-depth: 0 is needed): not every release would be checked")
+for chart in CHARTS:
     rc, ref, err = render(chart, None)
     if rc != 0:
         errors.append(f"{chart}: does not render with its own defaults: {err.strip()[:300]}")
         continue
-    for tag in tags:
+    for tag in published:
         old = subprocess.run(["git", "show", f"{tag}:{chart}/values.yaml"], capture_output=True, text=True)
         if old.returncode != 0:
             errors.append(f"{chart}: cannot read values.yaml at tag {tag}: {old.stderr.strip()[:200]}")
@@ -81,4 +77,4 @@ for e in errors:
     print(f"::error::{e}")
 if errors:
     sys.exit(1)
-print("Checked: each chart renders, with the same objects, under its previous releases' values (--reuse-values).")
+print(f"Checked: each chart renders, with the same objects, under its {len(published)} previous releases' values (--reuse-values).")
