@@ -43,9 +43,8 @@ timestamp: 2026-11-11T00:00:00Z
 | `identityLifecycle.{roleClientId,roles[]}` | `realm-management`, `manage-users`/`view-users`/`query-groups` | exactly the roles its service account holds; a duplicate is refused |
 | `ideClient.enabled` / `clientId` / `name` | `false` / `krateo-ide` / `Krateo IDE (MCP)` | the public client IDEs sign in with for the MCP endpoint (needs keycloak-config-kog >= 0.9.1 with oasgen-provider >= 0.67.0, which match its two protocol mappers by name) |
 | `ideClient.redirectUris[]` | `http://localhost:*`, `http://127.0.0.1:*` | loopback only (the IDE picks the port) |
-| `ideClient.audience` / `groupsClaim` | removed in 0.7.0 | moved to `mcp.audience` / `mcp.groupsClaim`; a non-empty value here **fails the render**, naming the new key |
+| `ideClient.audience` / `groupsClaim` | removed in 0.7.0 | `audience` moved to `mcp.audience`; a value carried over passes only if it is the same, otherwise the render **fails**, naming the new key. `groupsClaim` is gone (always `groups`, the only claim authn reads) |
 | `mcp.audience` | `""` (unset) | **required** when `ideClient`, `hermesClient` or `agentRegistration` is enabled: the MCP resource the gateway expects in the access token's `aud`, byte-for-byte (`https://<portal host>/mcp`, no trailing slash). One value for every MCP client |
-| `mcp.groupsClaim` | `groups` | claim name of the bare-name group-membership mapper on every MCP client |
 | `hermesClient.enabled` / `clientId` / `name` | `false` / `hermes` / `Hermes Agent (MCP)` | Hermes Agent's pre-registered public client: PKCE S256, code flow only, redirect exactly `http://127.0.0.1/callback` (any port) |
 | `agentRegistration.enabled` | `false` | anonymous dynamic client registration for personal agents (needs keycloak-config-kog >= 0.15.0, `realm.events.enabled`, `realm.events.expiration` >= 1209600 (14 days) and `realm.adminEvents.enabled`); see usage |
 | `realm.offlineSessions.maxLifespan` | `2592000` (30 d) | maximum lifetime of an offline session, in seconds, realm-wide; `0` = no maximum (Keycloak's default) |

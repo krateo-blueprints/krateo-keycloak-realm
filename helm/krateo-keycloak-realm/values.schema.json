@@ -670,12 +670,6 @@
           "title": "Audience",
           "description": "The MCP resource in the access token's aud, e.g. https://cmp.example.com/mcp. Required when ideClient, hermesClient or agentRegistration is enabled.",
           "default": ""
-        },
-        "groupsClaim": {
-          "type": "string",
-          "title": "Groups claim",
-          "description": "Claim name of the group-membership mapper.",
-          "default": "groups"
         }
       },
       "additionalProperties": false

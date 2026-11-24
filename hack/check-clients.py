@@ -208,14 +208,20 @@ for args, needle in (
         (["--set", "ideClient.enabled=true"], "mcp.audience is required"),
         (["--set", "hermesClient.enabled=true"], "mcp.audience is required"),
         (["--set", "agentRegistration.enabled=true"], "mcp.audience is required"),
-        (["--set", "ideClient.audience=https://x/mcp"], "ideClient.audience moved to mcp.audience"),
-        (["--set", "ideClient.groupsClaim=g"], "ideClient.groupsClaim moved to mcp.groupsClaim"),
+        (["--set", "ideClient.audience=https://x/mcp"], "moved to mcp.audience"),
+        (["--set", "ideClient.audience=https://x/mcp", "--set", "mcp.audience=https://y/mcp"], "moved to mcp.audience"),
+        (["--set", "ideClient.groupsClaim=g"], "is gone in 0.7.0"),
         (["--set", "agentRegistration.enabled=true", "--set", "mcp.audience=https://x/mcp", "--set", "realm.events.enabled=false"], "needs realm.events.enabled"),
         (["--set", "agentRegistration.enabled=true", "--set", "mcp.audience=https://x/mcp", "--set", "realm.events.expiration=604800"], "realm.events.expiration >= 1209600"),
         (["--set", "agentRegistration.enabled=true", "--set", "mcp.audience=https://x/mcp", "--set", "realm.adminEvents.enabled=false"], "needs realm.adminEvents.enabled")):
     p = subprocess.run(["helm", "template", "r", str(dst), "-f", EXAMPLE, *args], capture_output=True, text=True)
     if p.returncode == 0 or needle not in p.stderr:
         errs.append(f"{' '.join(args)} must refuse to render with '{needle}'")
+# What an upgrade from 0.6.x carries must pass: the old default groupsClaim, and the audience once mcp.audience agrees.
+for args in (["--set", "ideClient.groupsClaim=groups"], ["--set", "ideClient.enabled=true", "--set", "ideClient.groupsClaim=groups", "--set", "ideClient.audience=https://x/mcp", "--set", "mcp.audience=https://x/mcp"]):
+    p = subprocess.run(["helm", "template", "r", str(dst), "-f", EXAMPLE, *args], capture_output=True, text=True)
+    if p.returncode != 0:
+        errs.append(f"{' '.join(args)} (an upgrade from 0.6.x) must render: {p.stderr.strip()[:200]}")
 shutil.rmtree(work, ignore_errors=True)
 for e in errs:
     print(f"::error::{e}")

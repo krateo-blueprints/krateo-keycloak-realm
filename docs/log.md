@@ -15,9 +15,10 @@ timestamp: 2026-11-11T00:00:00Z
 registers its own client (RFC 7591), so the realm must accept anonymous registration without opening itself up.
 
 **What.**
-- `mcp.audience` / `mcp.groupsClaim`: one value for every MCP client. **Breaking:** `ideClient.audience` and
-  `ideClient.groupsClaim` are gone, and a non-empty value there fails the render, naming the new key (a silently
-  ignored audience would mint tokens the gateway rejects). Empty values, which `--reuse-values` carries from 0.6.x, pass.
+- `mcp.audience`: one value for every MCP client. **Breaking:** `ideClient.audience` moved there, and a different value
+  left behind fails the render, naming the new key (a silently ignored audience would mint tokens the gateway rejects).
+  `ideClient.groupsClaim` is gone: the claim is always `groups`, the only one authn reads. What upgrades carry from 0.6.x
+  (its default `groupsClaim: groups`, an equal audience) passes.
 - `hermesClient`: public PKCE client, redirect `http://127.0.0.1/callback`.
 - The `mcp` client scope (deterministic id, three scope mappers) with ANY MCP client, assigned as optional to `krateo-ide`
   and `hermes`: an unassigned requested scope is a hard `invalid_scope`, and every MCP client requests `scope=mcp`.

@@ -31,7 +31,7 @@ spec:
       (dict "obj" "audience" "name" "mcp-audience" "mapper" "oidc-audience-mapper"
             "config" (dict "included.custom.audience" $v.mcp.audience "access.token.claim" "true" "id.token.claim" "false" "introspection.token.claim" "true"))
       (dict "obj" "groups" "name" "groups" "mapper" "oidc-group-membership-mapper"
-            "config" (dict "claim.name" ($v.mcp.groupsClaim | default "groups") "full.path" "false" "access.token.claim" "true" "id.token.claim" "true" "userinfo.token.claim" "true"))
+            "config" (dict "claim.name" "groups" "full.path" "false" "access.token.claim" "true" "id.token.claim" "true" "userinfo.token.claim" "true"))
       (dict "obj" "username" "name" "username" "mapper" "oidc-usermodel-property-mapper"
             "config" (dict "user.attribute" "username" "claim.name" "preferred_username" "jsonType.label" "String" "access.token.claim" "true" "id.token.claim" "true" "userinfo.token.claim" "true")) }}
 ---

@@ -229,8 +229,8 @@ ideClient:
   enabled: false
   clientId: krateo-ide
   name: Krateo IDE (MCP)
-  # audience and groupsClaim moved to mcp.audience / mcp.groupsClaim in 0.7.0 (one value for every MCP client);
-  # setting them here fails the render, naming the new key.
+  # audience moved to mcp.audience in 0.7.0 and groupsClaim is gone (always `groups`, the claim authn reads). A value
+  # carried over from 0.6.x passes only if it agrees (the same audience; `groups`).
   redirectUris:
     - http://localhost:*
     - http://127.0.0.1:*
@@ -242,8 +242,6 @@ mcp:
   # REQUIRED (the render fails without it) when ideClient, hermesClient or agentRegistration is enabled,
   # e.g. https://cmp.example.com/mcp
   audience: ""
-  # Claim name of the group-membership mapper (not full path): what authn's allowedGroups reads.
-  groupsClaim: groups
 
 # Hermes Agent, pre-registered: a public native client (PKCE S256), redirecting to http://127.0.0.1/callback on any
 # port (Keycloak matches a 127.0.0.1 redirect port-agnostically, measured; `localhost` is refused). Fixed redirect:

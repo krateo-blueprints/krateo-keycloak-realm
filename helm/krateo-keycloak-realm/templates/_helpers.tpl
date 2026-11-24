@@ -105,12 +105,18 @@ in values.schema.json, which crdgen would turn into a CRD-level constraint on ex
 {{- $_ := set $seen (toString .) true -}}
 {{- end -}}
 {{- end -}}
-{{- /* 0.7.0 moved the MCP audience and groups claim to `mcp` (one value for every MCP client). A value left under
-ideClient would otherwise be ignored silently while the tokens kept the old audience. Empty strings (what
---reuse-values carries from <= 0.6.x defaults) pass. */ -}}
-{{- range $old, $new := dict "audience" "mcp.audience" "groupsClaim" "mcp.groupsClaim" -}}
-{{- if index $v.ideClient $old -}}
-{{- fail (printf "ideClient.%s moved to %s in 0.7.0 (one value for the IDE, Hermes and registered agent clients): move the value there and remove ideClient.%s" $old $new $old) -}}
+{{- /* 0.7.0 moved ideClient.audience to mcp.audience (one value for every MCP client) and dropped ideClient.groupsClaim
+(authn reads the claim `groups` and no other). Upgrades carry the old keys: --reuse-values, and a stored composition,
+hold 0.6.x's values, its default groupsClaim `groups` included. So a value that agrees passes, and one that would
+silently change tokens fails. */ -}}
+{{- with $v.ideClient.audience -}}
+{{- if ne (toString .) (toString $v.mcp.audience) -}}
+{{- fail (printf "ideClient.audience (%q) moved to mcp.audience in 0.7.0 (one value for the IDE, Hermes and registered agent clients): set mcp.audience to it, and remove ideClient.audience" (toString .)) -}}
+{{- end -}}
+{{- end -}}
+{{- with $v.ideClient.groupsClaim -}}
+{{- if ne (toString .) "groups" -}}
+{{- fail (printf "ideClient.groupsClaim %q is gone in 0.7.0: authn reads the claim named groups and no other, so remove it" (toString .)) -}}
 {{- end -}}
 {{- end -}}
 {{- if and (or $v.ideClient.enabled $v.hermesClient.enabled $v.agentRegistration.enabled) (not $v.mcp.audience) -}}

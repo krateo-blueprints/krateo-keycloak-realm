@@ -12,11 +12,13 @@ with the chart's own defaults must produce the same kinds, so a defaulted key ca
 feature off under reuse-values either.
 SELF-TEST: a template reading a key absent from the old values must fail the render.
 """
-import shutil, subprocess, sys, tempfile
+import re, shutil, subprocess, sys, tempfile
 from pathlib import Path
 import yaml
 
-CHARTS = {"helm/krateo-keycloak-realm": ["0.1.0", "0.2.0", "0.3.0", "0.3.1", "0.3.2"]}
+CHARTS = {"helm/krateo-keycloak-realm": [
+    "0.1.0", "0.2.0", "0.3.0", "0.3.1", "0.3.2", "0.3.3", "0.4.0", "0.5.0",
+    "0.5.1", "0.5.2", "0.5.3", "0.6.0", "0.6.1", "0.6.2", "0.6.3"]}
 SETS = {"helm/krateo-keycloak-realm": ["--set", "parentClient.redirectUris[0]=https://x/cb"]}
 
 
@@ -48,6 +50,15 @@ _v = yaml.safe_load(open("helm/krateo-keycloak-realm/values.yaml"))
 _f = yaml.safe_load(open("helm/krateo-keycloak-realm/files/values.defaults.yaml"))
 if _v != _f:
     errors.append("files/values.defaults.yaml differs from values.yaml: keep them equal")
+# The list must hold every published release: it stopped at 0.3.2 while 0.6.3 was out, and an upgrade from any release in
+# between was never rendered (0.7.0's first guard refused 0.5.0 - 0.6.3's own default values).
+published = [t for t in subprocess.run(["git", "tag", "--list"], capture_output=True, text=True).stdout.split() if re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", t)]
+if not published:
+    errors.append("no release tags in this checkout (fetch-depth: 0 is needed): nothing would be checked")
+for chart, tags in CHARTS.items():
+    missing = sorted(set(published) - set(tags))
+    if missing:
+        errors.append(f"{chart}: add the published release(s) {missing} to CHARTS")
 for chart, tags in CHARTS.items():
     rc, ref, err = render(chart, None)
     if rc != 0:
