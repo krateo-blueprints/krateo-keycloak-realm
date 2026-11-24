@@ -17,9 +17,10 @@ import yaml
 
 CHART = Path("helm/krateo-keycloak-realm")
 
-# Every optional client switched on, so the new objects are checked too (0.5.0).
+# Every optional client and agent registration switched on, so the new objects are checked too (0.5.0, 0.7.0).
 ALL = ["--set", "identityLifecycle.enabled=true", "--set", "ideClient.enabled=true",
-       "--set", "ideClient.audience=https://x/mcp", "--set", "clients[0].clientId=rp",
+       "--set", "hermesClient.enabled=true", "--set", "agentRegistration.enabled=true",
+       "--set", "mcp.audience=https://x/mcp", "--set", "clients[0].clientId=rp",
        "--set", "clients[0].redirectUris[0]=https://rp/cb"]
 
 

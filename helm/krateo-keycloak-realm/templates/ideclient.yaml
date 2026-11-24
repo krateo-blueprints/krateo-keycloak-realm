@@ -43,7 +43,7 @@ spec:
       consentRequired: false
       config:
         full.path: "false"
-        claim.name: {{ $ide.groupsClaim | default "groups" | quote }}
+        claim.name: "groups"
         id.token.claim: "true"
         access.token.claim: "true"
         userinfo.token.claim: "true"
@@ -52,7 +52,7 @@ spec:
       protocolMapper: oidc-audience-mapper
       consentRequired: false
       config:
-        included.custom.audience: {{ $ide.audience | quote }}
+        included.custom.audience: {{ $v.mcp.audience | quote }}
         access.token.claim: "true"
         id.token.claim: "false"
         introspection.token.claim: "true"

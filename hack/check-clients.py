@@ -10,7 +10,7 @@
 - Back-channel logout attributes are set when backchannelLogout.url is.
 SELF-TEST: a render whose secretRef key differs from the generated key must fail the check.
 """
-import shutil, subprocess, sys, tempfile
+import re, shutil, subprocess, sys, tempfile
 from pathlib import Path
 import yaml
 
@@ -98,7 +98,7 @@ if not [d for d in docs if d["kind"] == "KeycloakServiceAccountRoleMappingConfig
 
 # --- the IDE client (0.5.0): public + PKCE S256 + code flow only, loopback redirects, lightweight access
 # tokens off, groups and the audience in the ACCESS token; refuses to render without an audience.
-docs = render(["--set", "ideClient.enabled=true", "--set", "ideClient.audience=https://cmp.example.com/mcp"])
+docs = render(["--set", "ideClient.enabled=true", "--set", "mcp.audience=https://cmp.example.com/mcp"])
 ide = [d["spec"] for d in docs if d["kind"] == "KeycloakClient" and d["spec"]["clientId"] == "krateo-ide"]
 if len(ide) != 1:
     errs.append(f"ideClient.enabled renders {len(ide)} krateo-ide clients, want 1")
@@ -117,15 +117,121 @@ else:
     au = mp.get("oidc-audience-mapper", {})
     if au.get("included.custom.audience") != "https://cmp.example.com/mcp" or au.get("access.token.claim") != "true":
         errs.append(f"krateo-ide: the audience must be the configured value, in the access token: {au}")
+
+# --- `mcp` assigned to the pre-registered MCP clients (0.7.0): every MCP client requests scope=mcp, and an
+# unassigned requested scope is a hard invalid_scope (measured), so the scope renders with ANY MCP client and is
+# assigned as OPTIONAL to krateo-ide / hermes; registration alone assigns it to no pre-registered client.
+for args, want in ((["--set", "ideClient.enabled=true"], ["krateo-ide"]), (["--set", "hermesClient.enabled=true"], ["hermes"]),
+                   (["--set", "ideClient.enabled=true", "--set", "hermesClient.enabled=true"], ["hermes", "krateo-ide"]),
+                   (["--set", "agentRegistration.enabled=true"], [])):
+    docs = render(args + ["--set", "mcp.audience=https://cmp.example.com/mcp"])
+    got = sorted(d["spec"]["clientId"] for d in docs if d["kind"] == "KeycloakClientOptionalClientScope")
+    scopes = [d for d in docs if d["kind"] == "KeycloakClientScope" and d["spec"]["name"] == "mcp"]
+    if got != want or len(scopes) != 1 or any(d["spec"]["clientScope"] != "mcp" for d in docs if d["kind"] == "KeycloakClientOptionalClientScope"):
+        errs.append(f"{' '.join(args)}: want one mcp scope and optional assignments to {want}, got {got} / {len(scopes)} scope(s)")
+
+# --- the Hermes client (0.7.0): the same public PKCE shape, redirect exactly http://127.0.0.1/callback (Keycloak matches
+# a 127.0.0.1 redirect on any port; `localhost` is refused), the same claims from mcp.*.
+docs = render(["--set", "hermesClient.enabled=true", "--set", "mcp.audience=https://cmp.example.com/mcp"])
+hm = [d["spec"] for d in docs if d["kind"] == "KeycloakClient" and d["spec"]["clientId"] == "hermes"]
+if len(hm) != 1:
+    errs.append(f"hermesClient.enabled renders {len(hm)} hermes clients, want 1")
+else:
+    s = hm[0]; a = s.get("attributes", {}); mp = {x["protocolMapper"]: x["config"] for x in s.get("protocolMappers", [])}
+    if not (s.get("publicClient") is True and s.get("standardFlowEnabled") is True and s.get("directAccessGrantsEnabled") is False
+            and s.get("serviceAccountsEnabled") is False and s.get("implicitFlowEnabled") is False):
+        errs.append("hermes: must be public with the authorization code flow only")
+    if a.get("pkce.code.challenge.method") != "S256" or a.get("client.use.lightweight.access.token.enabled") != "false":
+        errs.append(f"hermes: needs PKCE S256 and lightweight access tokens off: {a}")
+    if s.get("redirectUris") != ["http://127.0.0.1/callback"]:
+        errs.append(f"hermes: the redirect must be exactly http://127.0.0.1/callback: {s.get('redirectUris')}")
+    if mp.get("oidc-audience-mapper", {}).get("included.custom.audience") != "https://cmp.example.com/mcp":
+        errs.append("hermes: the audience must be mcp.audience")
+
+# --- anonymous agent registration (0.7.0).
+AUD = "https://cmp.example.com/mcp"
+docs = render(["--set", "agentRegistration.enabled=true", "--set", f"mcp.audience={AUD}"])
+k = lambda kind: [d for d in docs if d["kind"] == kind]
+sc = [d["spec"] for d in k("KeycloakClientScope") if d["spec"]["name"] == "mcp"]
+if len(sc) != 1 or not re.fullmatch(r"[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-8[0-9a-f]{3}-[0-9a-f]{12}", sc[0].get("id", "")):
+    errs.append(f"agentRegistration: want one `mcp` KeycloakClientScope with a fixed UUID-shaped id: {sc}")
+else:
+    sid = sc[0]["id"]
+    sm = {d["spec"]["name"]: d["spec"] for d in k("KeycloakClientScopeProtocolMapper")}
+    if sorted(sm) != ["groups", "mcp-audience", "username"]:
+        errs.append(f"agentRegistration: the mcp scope needs exactly the mcp-audience, groups and username mappers: {sorted(sm)}")
+    if any(m.get("clientScopeId") != sid for m in sm.values()):
+        errs.append("agentRegistration: every scope mapper must name the mcp scope's fixed id")
+    if sm.get("mcp-audience", {}).get("config", {}).get("included.custom.audience") != AUD:
+        errs.append("agentRegistration: the scope's audience must be mcp.audience")
+    if sm.get("username", {}).get("config", {}).get("claim.name") != "preferred_username":
+        errs.append("agentRegistration: the scope must add preferred_username (registered clients hold no `profile` scope)")
+    other = render(["--set", "agentRegistration.enabled=true", "--set", f"mcp.audience={AUD}", "--set", "realm.name=other"])
+    oid = [d["spec"]["id"] for d in other if d["kind"] == "KeycloakClientScope"]
+    if oid == [sid]:
+        errs.append("agentRegistration: the mcp scope id must differ per realm")
+cp = {d["spec"]["providerId"]: d for d in k("KeycloakClientRegistrationPolicy") + k("KeycloakDefaultClientRegistrationPolicy")}
+# A realm default must be of the adopt-only kind: one that can create made a second copy on a fresh install.
+for pid, d in cp.items():
+    if (d["kind"] == "KeycloakDefaultClientRegistrationPolicy") is (pid == "client-disabled"):
+        errs.append(f"agentRegistration: {pid} must be {'created' if pid == 'client-disabled' else 'adopted (KeycloakDefaultClientRegistrationPolicy)'}: {d['kind']}")
+want = {"trusted-hosts": {"trusted-hosts": ["127.0.0.1"], "host-sending-registration-request-must-match": ["false"], "client-uris-must-match": ["true"]},
+        "allowed-client-templates": {"allowed-client-scopes": ["mcp", "offline_access"], "allow-default-scopes": ["true"]},
+        "max-clients": {"max-clients": ["200"]}, "client-disabled": {}}
+if sorted(cp) != sorted(want):
+    errs.append(f"agentRegistration: registration policies {sorted(cp)}, want {sorted(want)}")
+for pid, cfg in want.items():
+    d = cp.get(pid)
+    if not d:
+        continue
+    if d["spec"].get("subType") != "anonymous" or (d["spec"].get("config") or {}) != cfg:
+        errs.append(f"agentRegistration: policy {pid} must be anonymous with config {cfg}: {d['spec']}")
+    if pid != "client-disabled" and d["metadata"]["annotations"].get("krateo.io/deletion-policy") != "orphan":
+        errs.append(f"agentRegistration: the adopted default policy {pid} must always be orphan")
+for kind in ("KeycloakClientRegistrationPolicyConfiguration", "KeycloakDefaultClientRegistrationPolicyConfiguration"):
+    cfgs = k(kind)
+    if len(cfgs) != 1 or cfgs[0].get("spec", {}).get("configuration", {}).get("query", {}).get("findby", {}).get("type") != "org.keycloak.services.clientregistration.policy.ClientRegistrationPolicy":
+        errs.append(f"agentRegistration: the {kind} must set query.findby.type")
+pol = [d["spec"] for d in k("KeycloakClientPolicies")]
+if not pol or pol[0]["policies"][0]["profiles"] != ["agent-dcr"] or "ByAnonymous" not in pol[0]["policies"][0]["conditions"][0]["configuration"]["update-client-source"]:
+    errs.append("agentRegistration: the agent-dcr client policy must apply agent-dcr to anonymous registrations")
+realm = [d["spec"] for d in k("KeycloakRealm")]
+if not realm or realm[0].get("offlineSessionMaxLifespanEnabled") is not True or realm[0].get("offlineSessionMaxLifespan") != 2592000:
+    errs.append("the realm must cap offline sessions at 30 days by default (agents hold offline_access refresh tokens)")
+for et in ("CLIENT_REGISTER", "CLIENT_DELETE"):
+    if not realm or realm[0].get("enabledEventTypes", []).count(et) != 1:
+        errs.append(f"agentRegistration: the realm must record {et} events, once (the never-enabled cleanup reads them)")
+for args, want in (([], False), (["--set", "agentRegistration.enabled=true", "--set", f"mcp.audience={AUD}"], True)):
+    rm = [d["spec"]["roles"] for d in render(["--set", "identityLifecycle.enabled=true"] + args) if d["kind"] == "KeycloakServiceAccountRoleMapping"]
+    if len(rm) != 1 or ("view-events" in rm[0]) is not want or any(r in rm[0] for r in ("view-clients", "manage-clients")):
+        errs.append(f"identity-lifecycle roles with agentRegistration={want}: view-events exactly then, never view-/manage-clients: {rm}")
+
+# --- refusals.
 work = Path(tempfile.mkdtemp(prefix="clients-")); dst = work / "c"; shutil.copytree(CHART, dst)
 (dst / "Chart.yaml").write_text((dst / "Chart.yaml").read_text().replace("CHART_VERSION", "0.0.0-ci"))
-p = subprocess.run(["helm", "template", "r", str(dst), "-f", EXAMPLE, "--set", "ideClient.enabled=true"], capture_output=True, text=True)
+for args, needle in (
+        (["--set", "ideClient.enabled=true"], "mcp.audience is required"),
+        (["--set", "hermesClient.enabled=true"], "mcp.audience is required"),
+        (["--set", "agentRegistration.enabled=true"], "mcp.audience is required"),
+        (["--set", "ideClient.audience=https://x/mcp"], "moved to mcp.audience"),
+        (["--set", "ideClient.audience=https://x/mcp", "--set", "mcp.audience=https://y/mcp"], "moved to mcp.audience"),
+        (["--set", "ideClient.groupsClaim=g"], "is gone in 0.7.0"),
+        (["--set", "agentRegistration.enabled=true", "--set", "mcp.audience=https://x/mcp", "--set", "realm.events.enabled=false"], "needs realm.events.enabled"),
+        (["--set", "agentRegistration.enabled=true", "--set", "mcp.audience=https://x/mcp", "--set", "realm.events.expiration=604800"], "realm.events.expiration >= 1209600"),
+        (["--set", "agentRegistration.enabled=true", "--set", "mcp.audience=https://x/mcp", "--set", "realm.adminEvents.enabled=false"], "needs realm.adminEvents.enabled")):
+    p = subprocess.run(["helm", "template", "r", str(dst), "-f", EXAMPLE, *args], capture_output=True, text=True)
+    if p.returncode == 0 or needle not in p.stderr:
+        errs.append(f"{' '.join(args)} must refuse to render with '{needle}'")
+# What an upgrade from 0.6.x carries must pass: the old default groupsClaim, and the audience once mcp.audience agrees.
+for args in (["--set", "ideClient.groupsClaim=groups"], ["--set", "ideClient.enabled=true", "--set", "ideClient.groupsClaim=groups", "--set", "ideClient.audience=https://x/mcp", "--set", "mcp.audience=https://x/mcp"]):
+    p = subprocess.run(["helm", "template", "r", str(dst), "-f", EXAMPLE, *args], capture_output=True, text=True)
+    if p.returncode != 0:
+        errs.append(f"{' '.join(args)} (an upgrade from 0.6.x) must render: {p.stderr.strip()[:200]}")
 shutil.rmtree(work, ignore_errors=True)
-if p.returncode == 0 or "ideClient.audience is required" not in p.stderr:
-    errs.append("ideClient.enabled without an audience must refuse to render")
 for e in errs:
     print(f"::error::{e}")
 if errs:
     sys.exit(1)
 print("Checked confidential clients: shared generated secret, generate-once + keep, Configuration, back-channel logout; "
-      "identity-lifecycle (service account only, exact role mapping) and krateo-ide (public PKCE, loopback, audience).")
+      "identity-lifecycle (service account only, exact role mapping), krateo-ide and hermes (public PKCE, loopback, audience), "
+      "agent registration (mcp scope + mappers, registration policies, agent-dcr policy, CLIENT_REGISTER) and the refusals.")

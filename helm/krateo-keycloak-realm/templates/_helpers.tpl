@@ -63,7 +63,7 @@ in values.schema.json, which crdgen would turn into a CRD-level constraint on ex
 {{- fail (printf "clients[%s].redirectUris is required: the relying party's exact redirect URI (e.g. Keystone's OIDCRedirectURI)" .clientId) -}}
 {{- end -}}
 {{- end -}}
-{{- range $name, $c := dict "identityLifecycle" $v.identityLifecycle "ideClient" $v.ideClient -}}
+{{- range $name, $c := dict "identityLifecycle" $v.identityLifecycle "ideClient" $v.ideClient "hermesClient" $v.hermesClient -}}
 {{- if $c.enabled -}}
 {{- if not $c.clientId -}}
 {{- fail (printf "%s.clientId is required when %s.enabled" $name $name) -}}
@@ -105,10 +105,41 @@ in values.schema.json, which crdgen would turn into a CRD-level constraint on ex
 {{- $_ := set $seen (toString .) true -}}
 {{- end -}}
 {{- end -}}
-{{- if $v.ideClient.enabled -}}
-{{- if not $v.ideClient.audience -}}
-{{- fail "ideClient.audience is required when ideClient.enabled: the MCP resource the gateway expects in the access token's aud (e.g. https://cmp.example.com/mcp)" -}}
+{{- /* 0.7.0 moved ideClient.audience to mcp.audience (one value for every MCP client) and dropped ideClient.groupsClaim
+(authn reads the claim `groups` and no other). Upgrades carry the old keys: --reuse-values, and a stored composition,
+hold 0.6.x's values, its default groupsClaim `groups` included. So a value that agrees passes, and one that would
+silently change tokens fails. */ -}}
+{{- with $v.ideClient.audience -}}
+{{- if ne (toString .) (toString $v.mcp.audience) -}}
+{{- fail (printf "ideClient.audience (%q) moved to mcp.audience in 0.7.0 (one value for the IDE, Hermes and registered agent clients): set mcp.audience to it, and remove ideClient.audience" (toString .)) -}}
 {{- end -}}
+{{- end -}}
+{{- with $v.ideClient.groupsClaim -}}
+{{- if ne (toString .) "groups" -}}
+{{- fail (printf "ideClient.groupsClaim %q is gone in 0.7.0: authn reads the claim named groups and no other, so remove it" (toString .)) -}}
+{{- end -}}
+{{- end -}}
+{{- if and (or $v.ideClient.enabled $v.hermesClient.enabled $v.agentRegistration.enabled) (not $v.mcp.audience) -}}
+{{- fail "mcp.audience is required when ideClient, hermesClient or agentRegistration is enabled: the MCP resource the gateway expects in the access token's aud (e.g. https://cmp.example.com/mcp)" -}}
+{{- end -}}
+{{- if $v.agentRegistration.enabled -}}
+{{- if not $v.realm.events.enabled -}}
+{{- fail "agentRegistration.enabled needs realm.events.enabled: the cleanup of never-enabled registered clients reads their CLIENT_REGISTER events" -}}
+{{- end -}}
+{{- /* The cleanup reads registrations OLDER than 7 days, so events kept exactly 7 days expire just as they become
+useful; 14 days leaves it a week. Admin events tell a never-enabled client from one an admin enabled and later
+disabled (an admin UPDATE on clients/<id>, measured on 26.6.3), which must never be cleaned up. */ -}}
+{{- if lt (int64 ($v.realm.events.expiration | default 0)) 1209600 -}}
+{{- fail "agentRegistration.enabled needs realm.events.expiration >= 1209600 (14 days): the never-enabled cleanup reads CLIENT_REGISTER events older than 7 days" -}}
+{{- end -}}
+{{- if not ($v.realm.adminEvents | default dict).enabled -}}
+{{- fail "agentRegistration.enabled needs realm.adminEvents.enabled: without admin events the cleanup cannot tell a never-enabled client from one an admin disabled" -}}
+{{- end -}}
+{{- if lt (int $v.agentRegistration.maxClients) 1 -}}
+{{- fail "agentRegistration.maxClients must be >= 1" -}}
+{{- end -}}
+{{- end -}}
+{{- if $v.ideClient.enabled -}}
 {{- if not $v.ideClient.redirectUris -}}
 {{- fail "ideClient.redirectUris is required when ideClient.enabled (e.g. http://localhost:* and http://127.0.0.1:*)" -}}
 {{- end -}}
@@ -195,4 +226,12 @@ spec:
           apiVersion: generators.external-secrets.io/v1alpha1
           kind: Password
           name: {{ .obj }}-secret
+{{- end -}}
+
+{{- /* The `mcp` client scope's id: deterministic (a UUIDv5-shaped digest of the realm name), so its mappers
+(KeycloakClientScopeProtocolMapper clientScopeId) can name the scope without looking it up. Keycloak honours a
+caller-chosen client-scope id (measured on 26.6.3). Arg: the effective values. */ -}}
+{{- define "kr.mcpScopeId" -}}
+{{- $h := sha256sum (printf "krateo-keycloak-realm/%s/client-scope/mcp" .realm.name) -}}
+{{- printf "%s-%s-5%s-8%s-%s" (substr 0 8 $h) (substr 8 12 $h) (substr 13 16 $h) (substr 17 20 $h) (substr 20 32 $h) -}}
 {{- end -}}
