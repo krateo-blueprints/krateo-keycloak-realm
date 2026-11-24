@@ -31,11 +31,13 @@ registers its own client (RFC 7591), so the realm must accept anonymous registra
 - Needs keycloak-config-kog >= 0.16.0 (`KeycloakDefaultClientRegistrationPolicy`, `KeycloakClientOptionalClientScope`, the realm's offline-session fields, and missing
   registration-policy keys counting as drift).
 
-**Validated live on kc-roll057** (keycloak-config-kog 0.15.0, oasgen-provider 0.91.1, Keycloak 26.6.3): a fresh realm with
-every agent feature on converged with nothing touched by hand (18 resources, 5.5 to 7.5 min in two runs) while the existing
-realm stayed Ready; 33 of 33 sign-in and registration checks (krateo-ide, Hermes, an OpenClaw-shaped agent; controls
-included); `mcp.audience` changed in all three places in 13 s; then no update over 7 min. In-cluster only: the external
-hostname and the gateway's registration rate limit were not part of it.
+**Validated live on kc-roll057** (keycloak-config-kog 0.16.0, oasgen-provider 0.91.1, Keycloak 26.6.3): **five consecutive
+fresh installs** with every agent feature on, each converging with nothing touched by hand (19 resources, 4.5 to 9.5 min),
+three default policies and no duplicate, and **49 of 49** sign-in and registration checks each time (krateo-ide, Hermes, an
+OpenClaw-shaped agent; controls included; every access token's `sub` equal to the portal client's ID token, RS256 with a
+`kid`). The existing realm stayed Ready. `mcp.audience` changed in all three places in 12 s, then no update over 7 min; every
+uninstall left nothing behind. Two earlier green installs with KOG 0.15.0 had hidden the duplicate-policies race a third one
+hit. In-cluster only: the external hostname and the gateway's registration rate limit were not part of it.
 
 **Who can read client secrets.** On Keycloak 26.6.3 realm-management `view-clients` (and `manage-clients`, `realm-admin`)
 exposes every confidential client's secret in the realm: in the client list, by id, and at the client-secret endpoint
