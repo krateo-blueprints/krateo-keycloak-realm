@@ -9,6 +9,14 @@ timestamp: 2026-11-11T00:00:00Z
 
 # Log
 
+## 2026-11-24 — 0.7.1: `userProfile.attributes[].validations` is typed and closed
+
+`validations` was a bare object, so a misspelt validator (`lenght`) or option passed the chart and was then pruned by the
+KeycloakUserProfile CRD: the attribute had no validation, and nothing said so. The schema now declares exactly the validators
+keycloak-config-kog 0.16.0's CRD declares, closed, and `hack/check-userprofile.py` keeps the two equal. `double` bounds are
+whole numbers, as in that CRD. The composition CRD core-provider generates from it (2.13.117 and 2.13.128) is fully typed. A value that worked still
+works; one that was being dropped is now refused by name. Nothing renders differently.
+
 ## 2026-11-24 — 0.7.0: personal agents (Hermes, anonymous registration) and `mcp.*`
 
 **Why.** Personal agents (Hermes, OpenClaw) sign in to the MCP endpoint like IDEs do. Hermes is pre-registered; OpenClaw

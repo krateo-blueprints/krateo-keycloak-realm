@@ -63,6 +63,8 @@ jobs:
           # Confidential clients: one generated secret shared by Keycloak and the relying party,
           # generated once and kept.
           python3 hack/check-clients.py
+          # userProfile attributes: exactly the shape the KOG's KeycloakUserProfile declares (its CRD prunes the rest)
+          python3 hack/check-userprofile.py
 
   lint:
     runs-on: ubuntu-latest

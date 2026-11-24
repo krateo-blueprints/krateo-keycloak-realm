@@ -283,8 +283,163 @@
                 "type": "boolean"
               },
               "validations": {
-                "description": "Validators keyed by id, e.g. length: {max: 36}; the KOG's KeycloakUserProfile CRD validates their shape.",
-                "type": "object"
+                "type": "object",
+                "description": "Validators keyed by id, e.g. length: {max: 36}: exactly those the keycloak-config-kog KeycloakUserProfile CRD declares (it prunes any other silently).",
+                "additionalProperties": false,
+                "properties": {
+                  "length": {
+                    "type": "object",
+                    "properties": {
+                      "min": {
+                        "type": "integer"
+                      },
+                      "max": {
+                        "type": "integer"
+                      },
+                      "trim-disabled": {
+                        "type": "boolean"
+                      },
+                      "error-message": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "email": {
+                    "type": "object",
+                    "properties": {
+                      "max-local-length": {
+                        "type": "integer"
+                      },
+                      "error-message": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "pattern": {
+                    "type": "object",
+                    "properties": {
+                      "pattern": {
+                        "type": "string"
+                      },
+                      "error-message": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "options": {
+                    "type": "object",
+                    "properties": {
+                      "options": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "uri": {
+                    "type": "object",
+                    "properties": {
+                      "error-message": {
+                        "type": "string",
+                        "description": "Message (or message key) shown when the validation fails."
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "integer": {
+                    "type": "object",
+                    "properties": {
+                      "min": {
+                        "type": "integer"
+                      },
+                      "max": {
+                        "type": "integer"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "double": {
+                    "type": "object",
+                    "properties": {
+                      "min": {
+                        "type": "integer",
+                        "description": "Whole numbers only: keycloak-config-kog's CRD types it integer."
+                      },
+                      "max": {
+                        "type": "integer",
+                        "description": "Whole numbers only: keycloak-config-kog's CRD types it integer."
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "local-date": {
+                    "type": "object",
+                    "properties": {
+                      "error-message": {
+                        "type": "string",
+                        "description": "Message (or message key) shown when the validation fails."
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "iso-date": {
+                    "type": "object",
+                    "properties": {
+                      "error-message": {
+                        "type": "string",
+                        "description": "Message (or message key) shown when the validation fails."
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "multivalued": {
+                    "type": "object",
+                    "properties": {
+                      "min": {
+                        "type": "integer"
+                      },
+                      "max": {
+                        "type": "integer"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "username-prohibited-characters": {
+                    "type": "object",
+                    "properties": {
+                      "error-message": {
+                        "type": "string",
+                        "description": "Message (or message key) shown when the validation fails."
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "up-username-not-idn-homograph": {
+                    "type": "object",
+                    "properties": {
+                      "error-message": {
+                        "type": "string",
+                        "description": "Message (or message key) shown when the validation fails."
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "person-name-prohibited-characters": {
+                    "type": "object",
+                    "properties": {
+                      "error-message": {
+                        "type": "string",
+                        "description": "Message (or message key) shown when the validation fails."
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                }
               },
               "annotations": {
                 "type": "object",

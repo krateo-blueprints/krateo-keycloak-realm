@@ -1,0 +1,236 @@
+{
+ "properties": {
+  "annotations": {
+   "additionalProperties": {
+    "type": "string"
+   },
+   "description": "UI hints, e.g. inputType.",
+   "type": "object"
+  },
+  "displayName": {
+   "description": "Label, or a message key such as ${email}.",
+   "type": "string"
+  },
+  "group": {
+   "description": "Name of the attribute group (see groups) it is shown under.",
+   "type": "string"
+  },
+  "multivalued": {
+   "type": "boolean"
+  },
+  "name": {
+   "description": "Attribute name, e.g. email or krateo-access-request-uid.",
+   "type": "string"
+  },
+  "permissions": {
+   "description": "Who may see and change the value. An attribute with view/edit [admin] only is invisible to the user.",
+   "properties": {
+    "edit": {
+     "description": "\"admin\" (the admin console and Admin API) and/or \"user\" (the user, in the account console and login pages).",
+     "items": {
+      "enum": [
+       "admin",
+       "user"
+      ],
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "view": {
+     "description": "\"admin\" (the admin console and Admin API) and/or \"user\" (the user, in the account console and login pages).",
+     "items": {
+      "enum": [
+       "admin",
+       "user"
+      ],
+      "type": "string"
+     },
+     "type": "array"
+    }
+   },
+   "type": "object"
+  },
+  "required": {
+   "description": "When present, the attribute is required for these roles (and, optionally, only in these client scopes).",
+   "properties": {
+    "roles": {
+     "description": "\"admin\" (the admin console and Admin API) and/or \"user\" (the user, in the account console and login pages).",
+     "items": {
+      "enum": [
+       "admin",
+       "user"
+      ],
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "scopes": {
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    }
+   },
+   "type": "object"
+  },
+  "selector": {
+   "description": "When present, the attribute exists only when these client scopes are requested.",
+   "properties": {
+    "scopes": {
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    }
+   },
+   "type": "object"
+  },
+  "validations": {
+   "description": "Validators applied to the attribute value, keyed by validator id.",
+   "properties": {
+    "double": {
+     "properties": {
+      "max": {
+       "type": "integer"
+      },
+      "min": {
+       "type": "integer"
+      }
+     },
+     "type": "object"
+    },
+    "email": {
+     "properties": {
+      "error-message": {
+       "type": "string"
+      },
+      "max-local-length": {
+       "type": "integer"
+      }
+     },
+     "type": "object"
+    },
+    "integer": {
+     "properties": {
+      "max": {
+       "type": "integer"
+      },
+      "min": {
+       "type": "integer"
+      }
+     },
+     "type": "object"
+    },
+    "iso-date": {
+     "properties": {
+      "error-message": {
+       "description": "Message (or message key) shown when the validation fails.",
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "length": {
+     "properties": {
+      "error-message": {
+       "type": "string"
+      },
+      "max": {
+       "type": "integer"
+      },
+      "min": {
+       "type": "integer"
+      },
+      "trim-disabled": {
+       "type": "boolean"
+      }
+     },
+     "type": "object"
+    },
+    "local-date": {
+     "properties": {
+      "error-message": {
+       "description": "Message (or message key) shown when the validation fails.",
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "multivalued": {
+     "properties": {
+      "max": {
+       "type": "integer"
+      },
+      "min": {
+       "type": "integer"
+      }
+     },
+     "type": "object"
+    },
+    "options": {
+     "properties": {
+      "options": {
+       "items": {
+        "type": "string"
+       },
+       "type": "array"
+      }
+     },
+     "type": "object"
+    },
+    "pattern": {
+     "properties": {
+      "error-message": {
+       "type": "string"
+      },
+      "pattern": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "person-name-prohibited-characters": {
+     "properties": {
+      "error-message": {
+       "description": "Message (or message key) shown when the validation fails.",
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "up-username-not-idn-homograph": {
+     "properties": {
+      "error-message": {
+       "description": "Message (or message key) shown when the validation fails.",
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "uri": {
+     "properties": {
+      "error-message": {
+       "description": "Message (or message key) shown when the validation fails.",
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "username-prohibited-characters": {
+     "properties": {
+      "error-message": {
+       "description": "Message (or message key) shown when the validation fails.",
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "required": [
+  "name"
+ ],
+ "type": "object"
+}
