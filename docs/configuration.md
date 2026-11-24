@@ -46,7 +46,7 @@ timestamp: 2026-11-11T00:00:00Z
 | `ideClient.audience` / `groupsClaim` | removed in 0.7.0 | `audience` moved to `mcp.audience`; a value carried over passes only if it is the same, otherwise the render **fails**, naming the new key. `groupsClaim` is gone (always `groups`, the only claim authn reads) |
 | `mcp.audience` | `""` (unset) | **required** when `ideClient`, `hermesClient` or `agentRegistration` is enabled: the MCP resource the gateway expects in the access token's `aud`, byte-for-byte (`https://<portal host>/mcp`, no trailing slash). One value for every MCP client |
 | `hermesClient.enabled` / `clientId` / `name` | `false` / `hermes` / `Hermes Agent (MCP)` | Hermes Agent's pre-registered public client: PKCE S256, code flow only, redirect exactly `http://127.0.0.1/callback` (any port) |
-| `agentRegistration.enabled` | `false` | anonymous dynamic client registration for personal agents (needs keycloak-config-kog >= 0.15.0, `realm.events.enabled`, `realm.events.expiration` >= 1209600 (14 days) and `realm.adminEvents.enabled`); see usage |
+| `agentRegistration.enabled` | `false` | anonymous dynamic client registration for personal agents (needs keycloak-config-kog >= 0.16.0, `realm.events.enabled`, `realm.events.expiration` >= 1209600 (14 days) and `realm.adminEvents.enabled`); see usage |
 | `realm.offlineSessions.maxLifespan` | `2592000` (30 d) | maximum lifetime of an offline session, in seconds, realm-wide; `0` = no maximum (Keycloak's default) |
 | `agentRegistration.maxClients` | `200` | Keycloak's Max Clients Limit registration policy |
 | `oidcConfig.enabled` / `name` | `true` / `keycloak` | render authn's OIDCConfig (only where the `oidc.authn.krateo.io/v1alpha1` API exists); `name` is the `?name=` of `/oidc/login` |

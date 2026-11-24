@@ -17,7 +17,7 @@
 {{- $kinds = append $kinds "KeycloakClientOptionalClientScopeConfiguration" }}
 {{- end }}
 {{- if $v.agentRegistration.enabled }}
-{{- $kinds = concat $kinds (list "KeycloakClientRegistrationPolicyConfiguration" "KeycloakClientProfilesConfiguration" "KeycloakClientPoliciesConfiguration") }}
+{{- $kinds = concat $kinds (list "KeycloakClientRegistrationPolicyConfiguration" "KeycloakDefaultClientRegistrationPolicyConfiguration" "KeycloakClientProfilesConfiguration" "KeycloakClientPoliciesConfiguration") }}
 {{- end }}
 {{- range $kinds }}
 ---
@@ -43,7 +43,7 @@ spec:
         name: {{ $v.configuration.tokenSecret.name }}
         namespace: {{ $.Release.Namespace }}
         key: {{ $v.configuration.tokenSecret.key }}
-  {{- if eq . "KeycloakClientRegistrationPolicyConfiguration" }}
+  {{- if has . (list "KeycloakClientRegistrationPolicyConfiguration" "KeycloakDefaultClientRegistrationPolicyConfiguration") }}
   # The KOG's findby lists the realm's components of THIS type only (the `type` query parameter): a constant on the
   # Configuration, never a CR field, so a CR cannot list or adopt another kind of component.
   configuration:

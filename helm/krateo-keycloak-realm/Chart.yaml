@@ -33,5 +33,5 @@ annotations:
   # keycloak-config-kog >= 0.11.0 since 0.6.3: the KeycloakUserConfiguration carries configuration.query.findby.exact,
   # which 0.11.0 declares (an older KOG's Configuration CRD has no `configuration` block and PRUNES it silently, so
   # the user findby would keep reading only Keycloak's first page of 100 users). Measured on 0.11.0 with oasgen 0.80.0.
-  krateo.io/requires-keycloak-config-kog: ">= 0.15.0"
+  krateo.io/requires-keycloak-config-kog: ">= 0.16.0"
   krateo.io/requires-oasgen-provider: ">= 0.67.0"

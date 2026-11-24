@@ -4,8 +4,10 @@
 {{- if $a.enabled }}
 {{- $realmObj := include "kr.objName" $v.realm.name }}
 {{- $crt := "org.keycloak.services.clientregistration.policy.ClientRegistrationPolicy" }}
-{{- /* Anonymous registration policies. The first three ADOPT the realm's defaults (natural key name + subType) and are
-ALWAYS `orphan`, whatever deletionPolicy says: deleting the CR must never remove the realm's constraint. */ -}}
+{{- /* Anonymous registration policies. The first three are the realm's DEFAULTS (natural key name + subType), kept by the
+adopt-only KeycloakDefaultClientRegistrationPolicy: Keycloak creates them with the realm and accepts a second one of the same
+name, so a kind that could create made duplicates on a fresh install (measured; keycloak-config-kog 0.16.0). They are ALWAYS
+`orphan`, whatever deletionPolicy says: deleting the CR must never remove the realm's constraint. */ -}}
 {{- range $p := list
       (dict "obj" "trusted-hosts" "name" "Trusted Hosts" "provider" "trusted-hosts" "adopt" true
             "config" (dict "trusted-hosts" (list "127.0.0.1") "host-sending-registration-request-must-match" (list "false") "client-uris-must-match" (list "true")))
@@ -16,7 +18,7 @@ ALWAYS `orphan`, whatever deletionPolicy says: deleting the CR must never remove
       (dict "obj" "client-disabled" "name" "krateo client-disabled" "provider" "client-disabled" "adopt" false "config" dict) }}
 ---
 apiVersion: {{ $v.resourceGroup }}/v1
-kind: KeycloakClientRegistrationPolicy
+kind: {{ ternary "KeycloakDefaultClientRegistrationPolicy" "KeycloakClientRegistrationPolicy" $p.adopt }}
 metadata:
   name: {{ $realmObj }}-anon-{{ $p.obj }}
   namespace: {{ $.Release.Namespace }}

@@ -170,7 +170,11 @@ else:
     oid = [d["spec"]["id"] for d in other if d["kind"] == "KeycloakClientScope"]
     if oid == [sid]:
         errs.append("agentRegistration: the mcp scope id must differ per realm")
-cp = {d["spec"]["providerId"]: d for d in k("KeycloakClientRegistrationPolicy")}
+cp = {d["spec"]["providerId"]: d for d in k("KeycloakClientRegistrationPolicy") + k("KeycloakDefaultClientRegistrationPolicy")}
+# A realm default must be of the adopt-only kind: one that can create made a second copy on a fresh install.
+for pid, d in cp.items():
+    if (d["kind"] == "KeycloakDefaultClientRegistrationPolicy") is (pid == "client-disabled"):
+        errs.append(f"agentRegistration: {pid} must be {'created' if pid == 'client-disabled' else 'adopted (KeycloakDefaultClientRegistrationPolicy)'}: {d['kind']}")
 want = {"trusted-hosts": {"trusted-hosts": ["127.0.0.1"], "host-sending-registration-request-must-match": ["false"], "client-uris-must-match": ["true"]},
         "allowed-client-templates": {"allowed-client-scopes": ["mcp", "offline_access"], "allow-default-scopes": ["true"]},
         "max-clients": {"max-clients": ["200"]}, "client-disabled": {}}
@@ -184,9 +188,10 @@ for pid, cfg in want.items():
         errs.append(f"agentRegistration: policy {pid} must be anonymous with config {cfg}: {d['spec']}")
     if pid != "client-disabled" and d["metadata"]["annotations"].get("krateo.io/deletion-policy") != "orphan":
         errs.append(f"agentRegistration: the adopted default policy {pid} must always be orphan")
-cfgs = [d for d in k("KeycloakClientRegistrationPolicyConfiguration")]
-if not cfgs or cfgs[0].get("spec", {}).get("configuration", {}).get("query", {}).get("findby", {}).get("type") != "org.keycloak.services.clientregistration.policy.ClientRegistrationPolicy":
-    errs.append("agentRegistration: the KeycloakClientRegistrationPolicyConfiguration must set query.findby.type")
+for kind in ("KeycloakClientRegistrationPolicyConfiguration", "KeycloakDefaultClientRegistrationPolicyConfiguration"):
+    cfgs = k(kind)
+    if len(cfgs) != 1 or cfgs[0].get("spec", {}).get("configuration", {}).get("query", {}).get("findby", {}).get("type") != "org.keycloak.services.clientregistration.policy.ClientRegistrationPolicy":
+        errs.append(f"agentRegistration: the {kind} must set query.findby.type")
 pol = [d["spec"] for d in k("KeycloakClientPolicies")]
 if not pol or pol[0]["policies"][0]["profiles"] != ["agent-dcr"] or "ByAnonymous" not in pol[0]["policies"][0]["conditions"][0]["configuration"]["update-client-source"]:
     errs.append("agentRegistration: the agent-dcr client policy must apply agent-dcr to anonymous registrations")

@@ -259,7 +259,7 @@ hermesClient:
 # /oauth/callback, and may only request the `mcp` scope (which carries the audience, groups and preferred_username
 # claims) and offline_access (which OpenClaw always asks for; see realm.offlineSessions). Adopts the realm's default
 # Trusted Hosts / Allowed Client Scopes / Max Clients Limit policies and records CLIENT_REGISTER events (the
-# never-enabled cleanup reads them). Needs keycloak-config-kog >= 0.15.0.
+# never-enabled cleanup reads them). Needs keycloak-config-kog >= 0.16.0.
 agentRegistration:
   enabled: false
   # The realm's cap on registered clients (Keycloak's Max Clients Limit policy).

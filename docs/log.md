@@ -28,7 +28,7 @@ registers its own client (RFC 7591), so the realm must accept anonymous registra
   `view-clients`, which exposes every client secret). Refuses to render without user events kept >= 14 days and admin events on.
 - `realm.offlineSessions.maxLifespan`, default 30 days, realm-wide: **existing installs get the cap on upgrade**, so an
   offline session older than 30 days ends. `0` keeps Keycloak's behaviour (no maximum).
-- Needs keycloak-config-kog >= 0.15.0 (`KeycloakClientOptionalClientScope`, the realm's offline-session fields, and missing
+- Needs keycloak-config-kog >= 0.16.0 (`KeycloakDefaultClientRegistrationPolicy`, `KeycloakClientOptionalClientScope`, the realm's offline-session fields, and missing
   registration-policy keys counting as drift).
 
 **Validated live on kc-roll057** (keycloak-config-kog 0.15.0, oasgen-provider 0.91.1, Keycloak 26.6.3): a fresh realm with
