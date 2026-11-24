@@ -127,7 +127,8 @@ clients carry the same claims inline; a token then holds the audience and `group
 | `agent-dcr` client profile + policy | on anonymous registrations: PKCE S256, loopback http only, full scope off, and a redirect of exactly `http://127.0.0.1[:port]/oauth/mcp/callback` (OpenClaw with its Gateway running) or `/oauth/callback` (its CLI login). `localhost`, public hosts and any other path are refused |
 | `CLIENT_REGISTER`, `CLIENT_DELETE` event types | added to `realm.events.types`: identity-lifecycle's cleanup finds clients registered more than 7 days ago and never enabled from these events and the realm's admin events |
 
-Full scope is off on registered clients, so requesting `roles` adds no role the client is not mapped to, and every scope a
+At sign-in a registered client may request exactly the scopes it registered for, plus `openid`; anything else is
+`invalid_scope` (measured). Full scope is off on registered clients, so requesting `roles` adds no role the client is not mapped to, and every scope a
 client asks for is listed on the consent screen.
 
 A registered client requires **consent**, so the user's first sign-in shows Keycloak's consent screen ("Offline Access",
