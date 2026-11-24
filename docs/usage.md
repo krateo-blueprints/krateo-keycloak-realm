@@ -136,6 +136,11 @@ signs in again at least every 30 days. The cap is realm-wide and applies to ever
 (Keycloak's default, under which an offline session that keeps being used never expires). Removing a user from their group
 takes effect at the agent's next refresh: the new access token has no `groups`, and authn refuses it.
 
+**Ending an agent's access** is done in Keycloak: disable its client, or revoke the user's consent. It takes effect at the
+agent's next refresh, so it lasts until its current access token expires, and authn issues nothing that outlives that token
+(at most 15 minutes per exchange). authn verifies tokens, not Keycloak sessions. An agent works only for a person who has
+signed in to the portal at least once.
+
 The three default policies are **adopted** (found by name and sub-type) and always `orphan`, whatever `deletionPolicy`
 says: deleting a CR must never remove a constraint from the realm. The client profiles and policies CRs own the realm's
 **whole** (non-global) profile and policy lists.
