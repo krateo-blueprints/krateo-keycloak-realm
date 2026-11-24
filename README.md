@@ -3,7 +3,7 @@
 ## What is this
 
 A Helm chart that declares a Krateo platform's **parent Keycloak realm** as
-[keycloak-config-kog](https://github.com/krateo-blueprints/keycloak-operator-kog) custom
+[keycloak-config-kog](https://github.com/krateo-blueprints/keycloak-provider-kog) custom
 resources: realm settings (self-registration off, set-password and verify-email links by email,
 user events), its groups, and the portal's public PKCE OIDC client with a `groups` claim. The KOG's
 controllers reconcile them against Keycloak and heal changes made in the Keycloak console.
